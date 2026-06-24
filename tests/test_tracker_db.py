@@ -1,8 +1,10 @@
+import sqlite3
+from contextlib import closing
 import tempfile
 import unittest
 from pathlib import Path
 
-from tracker_db import add_job, list_jobs, update_job_status
+from tracker_db import add_job, initialize_database, list_jobs, update_job_status
 
 
 class TrackerDatabaseTests(unittest.TestCase):
@@ -17,6 +19,7 @@ class TrackerDatabaseTests(unittest.TestCase):
                 url="https://example.com/job",
                 role="support",
                 notes="Remote role",
+                output_dir="outputs/example-ltd-support-engineer",
             )
             jobs = list_jobs(db_path)
 
@@ -25,6 +28,10 @@ class TrackerDatabaseTests(unittest.TestCase):
             self.assertEqual(jobs[0]["company"], "Example Ltd")
             self.assertEqual(jobs[0]["position"], "Support Engineer")
             self.assertEqual(jobs[0]["status"], "saved")
+            self.assertEqual(
+                jobs[0]["output_dir"],
+                "outputs/example-ltd-support-engineer",
+            )
 
     def test_updates_job_status(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -54,6 +61,36 @@ class TrackerDatabaseTests(unittest.TestCase):
 
             with self.assertRaises(ValueError):
                 update_job_status(db_path, 99, "applied")
+
+    def test_initialize_database_adds_output_dir_to_existing_database(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = Path(temp_dir) / "jobs.db"
+            with closing(sqlite3.connect(db_path)) as connection:
+                with connection:
+                    connection.execute(
+                        """
+                        CREATE TABLE jobs (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            company TEXT NOT NULL,
+                            position TEXT NOT NULL,
+                            url TEXT,
+                            role TEXT,
+                            status TEXT NOT NULL,
+                            notes TEXT,
+                            created_at TEXT NOT NULL
+                        )
+                        """
+                    )
+
+            initialize_database(db_path)
+
+            with closing(sqlite3.connect(db_path)) as connection:
+                columns = {
+                    row[1]
+                    for row in connection.execute("PRAGMA table_info(jobs)").fetchall()
+                }
+
+            self.assertIn("output_dir", columns)
 
 
 if __name__ == "__main__":

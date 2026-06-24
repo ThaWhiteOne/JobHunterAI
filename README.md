@@ -47,7 +47,7 @@ python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-su
 Generate files and save the application in the tracker:
 
 ```bash
-python main.py --job examples/sample_job.txt --track --company "Example Ltd" --position "Support Engineer" --url "https://example.com/job"
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --track --company "Example Ltd" --position "Support Engineer" --url "https://example.com/job"
 ```
 
 By default, generated files are written to `outputs/`:
@@ -63,7 +63,7 @@ The `outputs/` folder is ignored by Git because the files are generated.
 Add a tracked job:
 
 ```bash
-python tracker.py add --company "Example Ltd" --position "Support Engineer" --url "https://example.com/job" --role support
+python tracker.py add --company "Example Ltd" --position "Support Engineer" --url "https://example.com/job" --role support --output-dir outputs/example-ltd-support-engineer
 ```
 
 List tracked jobs:

@@ -67,6 +67,7 @@ class MainTrackingTests(unittest.TestCase):
         self.assertEqual(kwargs["position"], "Support Engineer")
         self.assertEqual(kwargs["role"], "support")
         self.assertEqual(kwargs["status"], "generated")
+        self.assertEqual(kwargs["output_dir"], str(OUTPUTS_DIR))
 
     def test_track_generated_application_returns_none_when_disabled(self) -> None:
         args = tracking_args(track=False)

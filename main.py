@@ -102,6 +102,7 @@ def track_generated_application(args: argparse.Namespace, role: str) -> int | No
         role=role,
         status="generated",
         notes=args.notes,
+        output_dir=str(get_output_dir(args)),
     )
 
 

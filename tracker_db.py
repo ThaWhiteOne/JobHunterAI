@@ -33,10 +33,21 @@ def initialize_database(db_path: Path) -> None:
                     role TEXT,
                     status TEXT NOT NULL,
                     notes TEXT,
+                    output_dir TEXT,
                     created_at TEXT NOT NULL
                 )
                 """
             )
+            ensure_output_dir_column(connection)
+
+
+def ensure_output_dir_column(connection: sqlite3.Connection) -> None:
+    columns = {
+        row["name"]
+        for row in connection.execute("PRAGMA table_info(jobs)").fetchall()
+    }
+    if "output_dir" not in columns:
+        connection.execute("ALTER TABLE jobs ADD COLUMN output_dir TEXT")
 
 
 def validate_status(status: str) -> None:
@@ -53,6 +64,7 @@ def add_job(
     role: str = "",
     status: str = "saved",
     notes: str = "",
+    output_dir: str = "",
 ) -> int:
     company = company.strip()
     position = position.strip()
@@ -72,8 +84,11 @@ def add_job(
             cursor = connection.execute(
                 """
                 INSERT INTO jobs
-                    (company, position, url, role, status, notes, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (
+                        company, position, url, role, status, notes,
+                        output_dir, created_at
+                    )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     company,
@@ -82,6 +97,7 @@ def add_job(
                     role.strip(),
                     status,
                     notes.strip(),
+                    output_dir.strip(),
                     created_at,
                 ),
             )
@@ -94,7 +110,9 @@ def list_jobs(db_path: Path) -> list[dict[str, str | int]]:
     with closing(connect(db_path)) as connection:
         rows = connection.execute(
             """
-            SELECT id, company, position, url, role, status, notes, created_at
+            SELECT
+                id, company, position, url, role, status, notes,
+                output_dir, created_at
             FROM jobs
             ORDER BY id DESC
             """

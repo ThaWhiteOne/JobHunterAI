@@ -13,6 +13,7 @@ def parse_args() -> argparse.Namespace:
     add_parser.add_argument("--position", required=True, help="Job title.")
     add_parser.add_argument("--url", default="", help="Job post URL.")
     add_parser.add_argument("--role", default="", help="Detected or chosen role.")
+    add_parser.add_argument("--output-dir", default="", help="Generated files folder.")
     add_parser.add_argument(
         "--status",
         default="saved",
@@ -51,6 +52,8 @@ def print_jobs(jobs: list[dict[str, str | int]]) -> None:
             print(f"   URL: {job['url']}")
         if job["notes"]:
             print(f"   Notes: {job['notes']}")
+        if job["output_dir"]:
+            print(f"   Output: {job['output_dir']}")
         print(f"   Created: {job['created_at']}")
 
 
@@ -67,6 +70,7 @@ def main() -> None:
                 role=args.role,
                 status=args.status,
                 notes=args.notes,
+                output_dir=args.output_dir,
             )
             print(f"Added job #{job_id}.")
             return
