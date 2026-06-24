@@ -1,8 +1,10 @@
 import argparse
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
-from main import track_generated_application, validate_tracking_args
+from config import OUTPUTS_DIR
+from main import get_output_dir, track_generated_application, validate_tracking_args
 
 
 def tracking_args(
@@ -11,6 +13,7 @@ def tracking_args(
     position: str = "Support Engineer",
     url: str = "https://example.com/job",
     notes: str = "Generated application",
+    output_dir: Path | None = None,
 ) -> argparse.Namespace:
     return argparse.Namespace(
         track=track,
@@ -18,10 +21,22 @@ def tracking_args(
         position=position,
         url=url,
         notes=notes,
+        output_dir=output_dir,
     )
 
 
 class MainTrackingTests(unittest.TestCase):
+    def test_get_output_dir_uses_default_when_not_provided(self) -> None:
+        args = tracking_args(output_dir=None)
+
+        self.assertEqual(get_output_dir(args), OUTPUTS_DIR)
+
+    def test_get_output_dir_uses_custom_path_when_provided(self) -> None:
+        custom_output_dir = Path("outputs/example-ltd-support-engineer")
+        args = tracking_args(output_dir=custom_output_dir)
+
+        self.assertEqual(get_output_dir(args), custom_output_dir)
+
     def test_validate_tracking_args_allows_disabled_tracking(self) -> None:
         args = tracking_args(track=False, company="", position="")
 

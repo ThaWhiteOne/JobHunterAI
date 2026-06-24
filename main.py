@@ -1,7 +1,12 @@
 import argparse
 from pathlib import Path
 
-from config import JOB_TRACKER_DB_PATH, OUTPUTS_DIR, ROLE_DISPLAY_NAMES, SAMPLE_JOB_PATH
+from config import (
+    JOB_TRACKER_DB_PATH,
+    OUTPUTS_DIR,
+    ROLE_DISPLAY_NAMES,
+    SAMPLE_JOB_PATH,
+)
 from file_utils import read_text_file, write_text_file
 from generators import (
     generate_cover_letter,
@@ -35,6 +40,11 @@ def parse_args() -> argparse.Namespace:
         help="Print role scores and profile selection details.",
     )
     parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help="Folder where generated files should be written.",
+    )
+    parser.add_argument(
         "--track",
         action="store_true",
         help="Save this generated application to the local job tracker.",
@@ -64,6 +74,10 @@ def parse_args() -> argparse.Namespace:
 
 def get_job_path(args: argparse.Namespace) -> Path:
     return args.job_option or args.job_file or SAMPLE_JOB_PATH
+
+
+def get_output_dir(args: argparse.Namespace) -> Path:
+    return args.output_dir or OUTPUTS_DIR
 
 
 def validate_tracking_args(args: argparse.Namespace) -> None:
@@ -113,9 +127,10 @@ def main() -> None:
         )
         linkedin_message = generate_linkedin_message(role, role_display_name)
 
-        resume_path = OUTPUTS_DIR / "resume.md"
-        cover_letter_path = OUTPUTS_DIR / "cover_letter.md"
-        linkedin_message_path = OUTPUTS_DIR / "linkedin_message.txt"
+        output_dir = get_output_dir(args)
+        resume_path = output_dir / "resume.md"
+        cover_letter_path = output_dir / "cover_letter.md"
+        linkedin_message_path = output_dir / "linkedin_message.txt"
 
         write_text_file(resume_path, resume)
         write_text_file(cover_letter_path, cover_letter)
@@ -126,6 +141,7 @@ def main() -> None:
         print(f"Detected role: {role} ({role_display_name})")
         if args.debug:
             print(f"Job file: {job_path}")
+            print(f"Output directory: {output_dir}")
             print(f"Role scores: {scores}")
             print(f"Profile used: {profile_path}")
             if used_fallback:

@@ -38,13 +38,19 @@ Print role scores and profile selection details:
 python main.py --debug
 ```
 
+Write generated files to a custom folder:
+
+```bash
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer
+```
+
 Generate files and save the application in the tracker:
 
 ```bash
 python main.py --job examples/sample_job.txt --track --company "Example Ltd" --position "Support Engineer" --url "https://example.com/job"
 ```
 
-Generated files are written to `outputs/`:
+By default, generated files are written to `outputs/`:
 
 - `outputs/resume.md`
 - `outputs/cover_letter.md`
