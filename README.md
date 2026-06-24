@@ -38,6 +38,12 @@ Print role scores and profile selection details:
 python main.py --debug
 ```
 
+Generate files and save the application in the tracker:
+
+```bash
+python main.py --job examples/sample_job.txt --track --company "Example Ltd" --position "Support Engineer" --url "https://example.com/job"
+```
+
 Generated files are written to `outputs/`:
 
 - `outputs/resume.md`
@@ -94,7 +100,7 @@ profiles/support_cv.md
 profiles/developer_cv.md
 profiles/cyber_cv.md
 templates/resume_template.md
-tests/test_role_detector.py
+tests/
 outputs/
 ```
 
@@ -136,7 +142,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, profile fallback behavior, basic document generation, and job tracker database operations.
+The tests cover role detection, profile fallback behavior, basic document generation, generator-to-tracker integration, and job tracker database operations.
 
 ## Current Limitations
 

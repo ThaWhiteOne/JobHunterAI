@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from config import OUTPUTS_DIR, ROLE_DISPLAY_NAMES, SAMPLE_JOB_PATH
+from config import JOB_TRACKER_DB_PATH, OUTPUTS_DIR, ROLE_DISPLAY_NAMES, SAMPLE_JOB_PATH
 from file_utils import read_text_file, write_text_file
 from generators import (
     generate_cover_letter,
@@ -10,6 +10,7 @@ from generators import (
 )
 from profile_selector import select_profile
 from role_detector import detect_role, score_roles
+from tracker_db import add_job
 
 
 def parse_args() -> argparse.Namespace:
@@ -33,6 +34,31 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print role scores and profile selection details.",
     )
+    parser.add_argument(
+        "--track",
+        action="store_true",
+        help="Save this generated application to the local job tracker.",
+    )
+    parser.add_argument(
+        "--company",
+        default="",
+        help="Company name for --track.",
+    )
+    parser.add_argument(
+        "--position",
+        default="",
+        help="Job title for --track.",
+    )
+    parser.add_argument(
+        "--url",
+        default="",
+        help="Job post URL for --track.",
+    )
+    parser.add_argument(
+        "--notes",
+        default="",
+        help="Optional notes for --track.",
+    )
     return parser.parse_args()
 
 
@@ -40,10 +66,36 @@ def get_job_path(args: argparse.Namespace) -> Path:
     return args.job_option or args.job_file or SAMPLE_JOB_PATH
 
 
+def validate_tracking_args(args: argparse.Namespace) -> None:
+    if not args.track:
+        return
+    if not args.company.strip():
+        raise ValueError("--company is required when using --track.")
+    if not args.position.strip():
+        raise ValueError("--position is required when using --track.")
+
+
+def track_generated_application(args: argparse.Namespace, role: str) -> int | None:
+    if not args.track:
+        return None
+
+    validate_tracking_args(args)
+    return add_job(
+        JOB_TRACKER_DB_PATH,
+        company=args.company,
+        position=args.position,
+        url=args.url,
+        role=role,
+        status="generated",
+        notes=args.notes,
+    )
+
+
 def main() -> None:
     args = parse_args()
 
     try:
+        validate_tracking_args(args)
         job_path = get_job_path(args)
         job_description = read_text_file(job_path, required=True)
         role = detect_role(job_description)
@@ -68,6 +120,7 @@ def main() -> None:
         write_text_file(resume_path, resume)
         write_text_file(cover_letter_path, cover_letter)
         write_text_file(linkedin_message_path, linkedin_message)
+        tracked_job_id = track_generated_application(args, role)
 
         print("JobHunterAI finished successfully.")
         print(f"Detected role: {role} ({role_display_name})")
@@ -84,6 +137,8 @@ def main() -> None:
         print(f"- {resume_path}")
         print(f"- {cover_letter_path}")
         print(f"- {linkedin_message_path}")
+        if tracked_job_id is not None:
+            print(f"Tracked job: #{tracked_job_id}")
 
     except (FileNotFoundError, ValueError) as error:
         raise SystemExit(f"JobHunterAI failed.\nError: {error}") from error
