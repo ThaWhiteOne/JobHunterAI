@@ -99,11 +99,13 @@ Junior SOC Analyst, SIEM, incident response, vulnerability, security events
 
 Expected role: `cybersecurity`
 
-Run the automated role detection tests:
+Run the automated tests:
 
 ```bash
 python -m unittest
 ```
+
+The tests cover role detection, profile fallback behavior, and basic document generation.
 
 ## Current Limitations
 
