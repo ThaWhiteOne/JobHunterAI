@@ -10,6 +10,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Detects the target role with keyword scoring
 - Selects the matching candidate profile
 - Generates a tailored resume, cover letter, and LinkedIn message
+- Tracks job applications with a local SQLite database
 - Works offline without OpenAI API calls or external services
 
 ## Supported Roles
@@ -45,15 +46,45 @@ Generated files are written to `outputs/`:
 
 The `outputs/` folder is ignored by Git because the files are generated.
 
+## Job Tracker
+
+Add a tracked job:
+
+```bash
+python tracker.py add --company "Example Ltd" --position "Support Engineer" --url "https://example.com/job" --role support
+```
+
+List tracked jobs:
+
+```bash
+python tracker.py list
+```
+
+Update a job status:
+
+```bash
+python tracker.py update --id 1 --status applied
+```
+
+Supported statuses are:
+
+```text
+saved, generated, applied, interview, rejected, offer
+```
+
+The tracker stores data in `job_tracker.db`, which is ignored by Git.
+
 ## Project Structure
 
 ```text
 main.py
+tracker.py
 config.py
 file_utils.py
 role_detector.py
 profile_selector.py
 generators.py
+tracker_db.py
 README.md
 requirements.txt
 .gitignore
@@ -105,17 +136,16 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, profile fallback behavior, and basic document generation.
+The tests cover role detection, profile fallback behavior, basic document generation, and job tracker database operations.
 
 ## Current Limitations
 
 - Uses simple keyword scoring instead of AI.
 - Reads one job description file per run.
 - Generates Markdown/text files only.
-- Does not track job applications yet.
+- Job tracker is local-only and uses SQLite.
 
 ## Roadmap
 
-- Add a SQLite job tracker
 - Add DOCX/PDF export
 - Add optional AI mode later while keeping offline mode

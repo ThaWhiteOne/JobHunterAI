@@ -1,0 +1,119 @@
+import sqlite3
+from contextlib import closing
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+VALID_STATUSES = (
+    "saved",
+    "generated",
+    "applied",
+    "interview",
+    "rejected",
+    "offer",
+)
+
+
+def connect(db_path: Path) -> sqlite3.Connection:
+    connection = sqlite3.connect(db_path)
+    connection.row_factory = sqlite3.Row
+    return connection
+
+
+def initialize_database(db_path: Path) -> None:
+    with closing(connect(db_path)) as connection:
+        with connection:
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS jobs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    company TEXT NOT NULL,
+                    position TEXT NOT NULL,
+                    url TEXT,
+                    role TEXT,
+                    status TEXT NOT NULL,
+                    notes TEXT,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+
+
+def validate_status(status: str) -> None:
+    if status not in VALID_STATUSES:
+        allowed_statuses = ", ".join(VALID_STATUSES)
+        raise ValueError(f"Invalid status '{status}'. Use one of: {allowed_statuses}")
+
+
+def add_job(
+    db_path: Path,
+    company: str,
+    position: str,
+    url: str = "",
+    role: str = "",
+    status: str = "saved",
+    notes: str = "",
+) -> int:
+    company = company.strip()
+    position = position.strip()
+    status = status.strip().lower()
+
+    if not company:
+        raise ValueError("Company is required.")
+    if not position:
+        raise ValueError("Position is required.")
+
+    validate_status(status)
+    initialize_database(db_path)
+    created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+    with closing(connect(db_path)) as connection:
+        with connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO jobs
+                    (company, position, url, role, status, notes, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    company,
+                    position,
+                    url.strip(),
+                    role.strip(),
+                    status,
+                    notes.strip(),
+                    created_at,
+                ),
+            )
+            return int(cursor.lastrowid)
+
+
+def list_jobs(db_path: Path) -> list[dict[str, str | int]]:
+    initialize_database(db_path)
+
+    with closing(connect(db_path)) as connection:
+        rows = connection.execute(
+            """
+            SELECT id, company, position, url, role, status, notes, created_at
+            FROM jobs
+            ORDER BY id DESC
+            """
+        ).fetchall()
+
+    return [dict(row) for row in rows]
+
+
+def update_job_status(db_path: Path, job_id: int, status: str) -> None:
+    status = status.strip().lower()
+    validate_status(status)
+    initialize_database(db_path)
+
+    with closing(connect(db_path)) as connection:
+        with connection:
+            cursor = connection.execute(
+                "UPDATE jobs SET status = ? WHERE id = ?",
+                (status, job_id),
+            )
+
+    if cursor.rowcount == 0:
+        raise ValueError(f"No job found with id {job_id}.")
