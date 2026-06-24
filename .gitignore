@@ -11,6 +11,9 @@ __pycache__/
 # Outputs
 outputs/
 
+# Local planning files
+CODEX_PROJECT_PLAN_JobHunterAI.md
+
 # VSCode
 .vscode/
 

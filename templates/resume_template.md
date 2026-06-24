@@ -1,17 +1,28 @@
 # Nikola Titirinov
 
+{contact_block}
+
 ## Target Role
 
 {target_role}
 
-## Tailored Profile
+## Professional Summary
 
-{profile_content}
+{professional_summary}
 
-## Job Match Summary
+## Core Skills
 
-{role_summary}
+{core_skills}
 
-## Matched Job Keywords
+## Relevant Experience
 
-{matched_keywords}
+{relevant_experience}
+
+## Selected Projects
+
+{selected_projects}
+
+## Languages
+
+- Bulgarian: Native
+- English: Fluent
