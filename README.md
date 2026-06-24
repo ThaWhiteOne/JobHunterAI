@@ -47,8 +47,10 @@ python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-su
 Generate files and save the application in the tracker:
 
 ```bash
-python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --track --company "Example Ltd" --position "Support Engineer" --url "https://example.com/job"
+python main.py --job examples/sample_job.txt --track --company "Example Ltd" --position "Support Engineer" --url "https://example.com/job"
 ```
+
+When `--track` is used without `--output-dir`, JobHunterAI creates a folder name from the company and position, such as `outputs/example-ltd-support-engineer`.
 
 By default, generated files are written to `outputs/`:
 

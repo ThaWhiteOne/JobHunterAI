@@ -1,4 +1,5 @@
 import argparse
+import re
 from pathlib import Path
 
 from config import (
@@ -76,7 +77,16 @@ def get_job_path(args: argparse.Namespace) -> Path:
     return args.job_option or args.job_file or SAMPLE_JOB_PATH
 
 
+def slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or "job"
+
+
 def get_output_dir(args: argparse.Namespace) -> Path:
+    if args.output_dir:
+        return args.output_dir
+    if args.track and args.company.strip() and args.position.strip():
+        return OUTPUTS_DIR / f"{slugify(args.company)}-{slugify(args.position)}"
     return args.output_dir or OUTPUTS_DIR
 
 

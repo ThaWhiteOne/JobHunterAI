@@ -4,7 +4,12 @@ from pathlib import Path
 from unittest.mock import patch
 
 from config import OUTPUTS_DIR
-from main import get_output_dir, track_generated_application, validate_tracking_args
+from main import (
+    get_output_dir,
+    slugify,
+    track_generated_application,
+    validate_tracking_args,
+)
 
 
 def tracking_args(
@@ -27,7 +32,7 @@ def tracking_args(
 
 class MainTrackingTests(unittest.TestCase):
     def test_get_output_dir_uses_default_when_not_provided(self) -> None:
-        args = tracking_args(output_dir=None)
+        args = tracking_args(track=False, output_dir=None)
 
         self.assertEqual(get_output_dir(args), OUTPUTS_DIR)
 
@@ -36,6 +41,24 @@ class MainTrackingTests(unittest.TestCase):
         args = tracking_args(output_dir=custom_output_dir)
 
         self.assertEqual(get_output_dir(args), custom_output_dir)
+
+    def test_get_output_dir_uses_company_and_position_when_tracking(self) -> None:
+        args = tracking_args(
+            company="Example Ltd",
+            position="Support Engineer",
+            output_dir=None,
+        )
+
+        self.assertEqual(
+            get_output_dir(args),
+            OUTPUTS_DIR / "example-ltd-support-engineer",
+        )
+
+    def test_slugify_creates_safe_folder_names(self) -> None:
+        self.assertEqual(
+            slugify("Junior Python Developer / APIs"),
+            "junior-python-developer-apis",
+        )
 
     def test_validate_tracking_args_allows_disabled_tracking(self) -> None:
         args = tracking_args(track=False, company="", position="")
@@ -67,7 +90,10 @@ class MainTrackingTests(unittest.TestCase):
         self.assertEqual(kwargs["position"], "Support Engineer")
         self.assertEqual(kwargs["role"], "support")
         self.assertEqual(kwargs["status"], "generated")
-        self.assertEqual(kwargs["output_dir"], str(OUTPUTS_DIR))
+        self.assertEqual(
+            kwargs["output_dir"],
+            str(OUTPUTS_DIR / "example-ltd-support-engineer"),
+        )
 
     def test_track_generated_application_returns_none_when_disabled(self) -> None:
         args = tracking_args(track=False)
