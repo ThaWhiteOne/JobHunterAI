@@ -5,5 +5,13 @@ Requirements:
 - SQL
 - Linux
 - Troubleshooting
-- English communication
-- Customer support experience
+- Customer support
+- English language
+- Network diagnostics
+- Technical support experience
+
+Responsibilities:
+
+- Assist customers with technical issues
+- Resolve software and connectivity problems
+- Provide troubleshooting support

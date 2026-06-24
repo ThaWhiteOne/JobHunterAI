@@ -1,4 +1,1 @@
-openai
-python-dotenv
-markdown
-rich
+# No external packages required.
