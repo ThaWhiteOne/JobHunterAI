@@ -80,6 +80,18 @@ List tracked jobs by status:
 python tracker.py list --status applied
 ```
 
+List tracked jobs by role:
+
+```bash
+python tracker.py list --role support
+```
+
+Combine filters:
+
+```bash
+python tracker.py list --status applied --role developer
+```
+
 Update a job status:
 
 ```bash

@@ -104,11 +104,16 @@ def add_job(
             return int(cursor.lastrowid)
 
 
-def list_jobs(db_path: Path, status_filter: str = "") -> list[dict[str, str | int]]:
+def list_jobs(
+    db_path: Path,
+    status_filter: str = "",
+    role_filter: str = "",
+) -> list[dict[str, str | int]]:
     initialize_database(db_path)
     status_filter = status_filter.strip().lower()
     if status_filter:
         validate_status(status_filter)
+    role_filter = role_filter.strip().lower()
 
     query = """
         SELECT
@@ -116,10 +121,16 @@ def list_jobs(db_path: Path, status_filter: str = "") -> list[dict[str, str | in
             output_dir, created_at
         FROM jobs
     """
-    parameters = ()
+    filters = []
+    parameters = []
     if status_filter:
-        query += " WHERE status = ?"
-        parameters = (status_filter,)
+        filters.append("status = ?")
+        parameters.append(status_filter)
+    if role_filter:
+        filters.append("LOWER(role) = ?")
+        parameters.append(role_filter)
+    if filters:
+        query += " WHERE " + " AND ".join(filters)
     query += " ORDER BY id DESC"
 
     with closing(connect(db_path)) as connection:

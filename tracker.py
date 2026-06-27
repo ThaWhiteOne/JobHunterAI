@@ -29,6 +29,11 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Only list jobs with this status.",
     )
+    list_parser.add_argument(
+        "--role",
+        default="",
+        help="Only list jobs with this role.",
+    )
 
     update_parser = subparsers.add_parser("update", help="Update a job status.")
     update_parser.add_argument("--id", type=int, required=True, help="Job id.")
@@ -82,7 +87,13 @@ def main() -> None:
             return
 
         if args.command == "list":
-            print_jobs(list_jobs(JOB_TRACKER_DB_PATH, status_filter=args.status))
+            print_jobs(
+                list_jobs(
+                    JOB_TRACKER_DB_PATH,
+                    status_filter=args.status,
+                    role_filter=args.role,
+                )
+            )
             return
 
         if args.command == "update":
