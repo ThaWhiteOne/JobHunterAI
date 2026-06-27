@@ -144,15 +144,13 @@ When `--export docx` is used, JobHunterAI also writes:
 
 - `outputs/resume.docx`
 - `outputs/cover_letter.docx`
-- `outputs/linkedin_message.docx`
 
 When `--export pdf` is used, JobHunterAI also writes:
 
 - `outputs/resume.pdf`
 - `outputs/cover_letter.pdf`
-- `outputs/linkedin_message.pdf`
 
-Use `--export all` to write HTML, DOCX, and PDF copies together.
+Use `--export all` to write HTML copies for all generated documents plus DOCX/PDF copies for the resume and cover letter.
 
 When `--review-notes` is used, JobHunterAI also writes `application_review.md` with detected role details, matched keywords, extracted requirement lines, and a checklist.
 
@@ -165,6 +163,30 @@ When `--manifest` is used, JobHunterAI also writes `application_manifest.json` w
 When `--write-report` is used, the Automation Unit also writes `automation_report.md` beside the manifest.
 
 The `outputs/` folder is ignored by Git because the files are generated.
+
+## Recommended Workflow
+
+For a real application draft:
+
+```bash
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --full-package
+```
+
+Review these files before applying:
+
+- `resume.md` or `resume.docx`
+- `cover_letter.md` or `cover_letter.docx`
+- `linkedin_message.txt`
+- `application_review.md`
+- `ai_brief.md`
+
+Then run the safe Automation Unit check:
+
+```bash
+python automation_unit.py check outputs/example-ltd-support-engineer/application_manifest.json --write-report
+```
+
+After reviewing the generated drafts and `automation_report.md`, apply manually through the job site or recruiter message.
 
 ## Job Tracker
 
@@ -300,7 +322,7 @@ The full package command is also covered by the automated tests.
 
 - Uses simple keyword scoring instead of AI.
 - Reads one job description file per run.
-- DOCX/PDF exports are simple offline documents, not custom-designed templates.
+- DOCX/PDF exports are simple offline documents for the resume and cover letter, not custom-designed templates.
 - AI brief generation is offline and does not call an API yet.
 - Manifest generation prepares automation handoff data but does not submit applications.
 - Automation Unit currently validates packages and writes reports only; it does not apply to jobs.

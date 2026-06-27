@@ -108,10 +108,8 @@ class CliTests(unittest.TestCase):
                 "linkedin_message.html",
                 "resume.docx",
                 "cover_letter.docx",
-                "linkedin_message.docx",
                 "resume.pdf",
                 "cover_letter.pdf",
-                "linkedin_message.pdf",
             ]
 
             self.assertEqual(result.returncode, 0, result.stderr)
@@ -120,6 +118,8 @@ class CliTests(unittest.TestCase):
                 with self.subTest(filename=filename):
                     self.assertIn(str(path), result.stdout)
                     self.assertTrue(path.exists())
+            self.assertFalse((output_dir / "linkedin_message.docx").exists())
+            self.assertFalse((output_dir / "linkedin_message.pdf").exists())
 
     def test_main_can_generate_application_review_notes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -222,10 +222,8 @@ class CliTests(unittest.TestCase):
                 "linkedin_message.html",
                 "resume.docx",
                 "cover_letter.docx",
-                "linkedin_message.docx",
                 "resume.pdf",
                 "cover_letter.pdf",
-                "linkedin_message.pdf",
             ]
 
             self.assertEqual(result.returncode, 0, result.stderr)

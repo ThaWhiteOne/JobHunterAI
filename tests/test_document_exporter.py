@@ -52,7 +52,6 @@ class DocumentExporterTests(unittest.TestCase):
                 [
                     output_dir / "resume.docx",
                     output_dir / "cover_letter.docx",
-                    output_dir / "linkedin_message.docx",
                 ],
             )
             self.assertEqual(
@@ -60,7 +59,6 @@ class DocumentExporterTests(unittest.TestCase):
                 [
                     output_dir / "resume.pdf",
                     output_dir / "cover_letter.pdf",
-                    output_dir / "linkedin_message.pdf",
                 ],
             )
             for path in [*docx_paths, *pdf_paths]:

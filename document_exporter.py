@@ -1,45 +1,94 @@
+from dataclasses import dataclass
 from pathlib import Path
 from textwrap import wrap
 from xml.sax.saxutils import escape as escape_xml
 from zipfile import ZIP_DEFLATED, ZipFile
 
 
-DOCUMENTS = [
+APPLICATION_DOCUMENTS = [
     ("resume", "Resume"),
     ("cover_letter", "Cover Letter"),
-    ("linkedin_message", "LinkedIn Message"),
 ]
 
 
-def markdown_to_lines(content: str) -> list[str]:
+@dataclass(frozen=True)
+class DocumentLine:
+    kind: str
+    text: str
+
+
+def markdown_to_document_lines(content: str) -> list[DocumentLine]:
     lines = []
 
     for raw_line in content.splitlines():
         line = raw_line.strip()
         if not line:
-            lines.append("")
+            lines.append(DocumentLine("blank", ""))
         elif line.startswith("### "):
-            lines.append(line[4:])
+            lines.append(DocumentLine("heading3", line[4:]))
         elif line.startswith("## "):
-            lines.append(line[3:])
+            lines.append(DocumentLine("heading2", line[3:]))
         elif line.startswith("# "):
-            lines.append(line[2:])
+            lines.append(DocumentLine("heading1", line[2:]))
         elif line.startswith("- "):
-            lines.append(f"- {line[2:]}")
+            lines.append(DocumentLine("bullet", line[2:]))
         else:
-            lines.append(line)
+            lines.append(DocumentLine("paragraph", line))
 
-    while lines and not lines[-1]:
+    while lines and lines[-1].kind == "blank":
         lines.pop()
 
     return lines
 
 
-def docx_paragraph(text: str) -> str:
+def markdown_to_lines(content: str) -> list[str]:
+    plain_lines = []
+
+    for line in markdown_to_document_lines(content):
+        if line.kind == "blank":
+            plain_lines.append("")
+        elif line.kind == "bullet":
+            plain_lines.append(f"- {line.text}")
+        else:
+            plain_lines.append(line.text)
+
+    return plain_lines
+
+
+def docx_run_properties(kind: str) -> str:
+    if kind == "title":
+        return "<w:b/><w:sz w:val=\"32\"/>"
+    if kind == "heading1":
+        return "<w:b/><w:sz w:val=\"28\"/>"
+    if kind == "heading2":
+        return "<w:b/><w:sz w:val=\"24\"/>"
+    if kind == "heading3":
+        return "<w:b/><w:sz w:val=\"22\"/>"
+    return "<w:sz w:val=\"21\"/>"
+
+
+def docx_paragraph_properties(kind: str) -> str:
+    if kind == "title":
+        return "<w:spacing w:after=\"240\"/>"
+    if kind in ("heading1", "heading2", "heading3"):
+        return "<w:spacing w:before=\"220\" w:after=\"80\"/>"
+    if kind == "bullet":
+        return "<w:ind w:left=\"360\" w:hanging=\"180\"/><w:spacing w:after=\"60\"/>"
+    return "<w:spacing w:after=\"80\"/>"
+
+
+def docx_paragraph(line: DocumentLine) -> str:
+    text = f"- {line.text}" if line.kind == "bullet" else line.text
     escaped_text = escape_xml(text)
     return (
         "<w:p>"
+        "<w:pPr>"
+        f"{docx_paragraph_properties(line.kind)}"
+        "</w:pPr>"
         "<w:r>"
+        "<w:rPr>"
+        f"{docx_run_properties(line.kind)}"
+        "</w:rPr>"
         "<w:t xml:space=\"preserve\">"
         f"{escaped_text}"
         "</w:t>"
@@ -49,8 +98,12 @@ def docx_paragraph(text: str) -> str:
 
 
 def docx_document_xml(title: str, content: str) -> str:
-    paragraphs = [docx_paragraph(title), docx_paragraph("")]
-    paragraphs.extend(docx_paragraph(line) for line in markdown_to_lines(content))
+    document_lines = [
+        DocumentLine("title", title),
+        DocumentLine("blank", ""),
+        *markdown_to_document_lines(content),
+    ]
+    paragraphs = [docx_paragraph(line) for line in document_lines]
 
     return f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -58,7 +111,7 @@ def docx_document_xml(title: str, content: str) -> str:
     {''.join(paragraphs)}
     <w:sectPr>
       <w:pgSz w:w="12240" w:h="15840"/>
-      <w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720"/>
+      <w:pgMar w:top="720" w:right="900" w:bottom="720" w:left="900"/>
     </w:sectPr>
   </w:body>
 </w:document>
@@ -99,35 +152,71 @@ def pdf_escape(text: str) -> str:
     return "".join(replacements.get(character, character) for character in text)
 
 
-def pdf_text_lines(title: str, content: str) -> list[str]:
-    raw_lines = [title, "", *markdown_to_lines(content)]
+def pdf_wrapped_lines(line: DocumentLine) -> list[DocumentLine]:
+    if line.kind == "blank":
+        return [line]
+
+    text = f"- {line.text}" if line.kind == "bullet" else line.text
+    width = 68 if line.kind in ("title", "heading1") else 84
+    return [DocumentLine(line.kind, wrapped) for wrapped in wrap(text, width=width)]
+
+
+def pdf_text_lines(title: str, content: str) -> list[DocumentLine]:
+    raw_lines = [
+        DocumentLine("title", title),
+        DocumentLine("blank", ""),
+        *markdown_to_document_lines(content),
+    ]
     output_lines = []
 
     for line in raw_lines:
-        if not line:
-            output_lines.append("")
-            continue
-        output_lines.extend(wrap(line, width=88) or [""])
+        output_lines.extend(pdf_wrapped_lines(line))
 
     return output_lines
 
 
-def pdf_pages(title: str, content: str, lines_per_page: int = 48) -> list[list[str]]:
+def pdf_line_style(kind: str) -> tuple[int, int, int]:
+    if kind == "title":
+        return 16, 22, 8
+    if kind == "heading1":
+        return 14, 20, 8
+    if kind in ("heading2", "heading3"):
+        return 12, 18, 6
+    if kind == "blank":
+        return 10, 10, 0
+    return 10, 14, 0
+
+
+def pdf_pages(title: str, content: str) -> list[list[tuple[DocumentLine, int]]]:
     lines = pdf_text_lines(title, content)
-    return [
-        lines[index : index + lines_per_page]
-        for index in range(0, len(lines), lines_per_page)
-    ] or [[]]
-
-
-def pdf_content_stream(lines: list[str]) -> str:
-    commands = ["BT", "/F1 10 Tf", "72 740 Td", "14 TL"]
+    pages = [[]]
+    y_position = 742
 
     for line in lines:
-        commands.append(f"({pdf_escape(line)}) Tj")
-        commands.append("T*")
+        font_size, leading, top_gap = pdf_line_style(line.kind)
+        if y_position - top_gap - leading < 72:
+            pages.append([])
+            y_position = 742
+        y_position -= top_gap
+        pages[-1].append((line, y_position))
+        y_position -= leading
 
-    commands.append("ET")
+    return pages or [[]]
+
+
+def pdf_content_stream(lines: list[tuple[DocumentLine, int]]) -> str:
+    commands = []
+
+    for line, y_position in lines:
+        if line.kind == "blank":
+            continue
+        font_size, _, _ = pdf_line_style(line.kind)
+        commands.append("BT")
+        commands.append(f"/F1 {font_size} Tf")
+        commands.append(f"72 {y_position} Td")
+        commands.append(f"({pdf_escape(line.text)}) Tj")
+        commands.append("ET")
+
     return "\n".join(commands)
 
 
@@ -193,11 +282,10 @@ def export_docx_files(
     contents = {
         "resume": resume,
         "cover_letter": cover_letter,
-        "linkedin_message": linkedin_message,
     }
     exported_paths = []
 
-    for document_id, title in DOCUMENTS:
+    for document_id, title in APPLICATION_DOCUMENTS:
         path = output_dir / f"{document_id}.docx"
         write_docx(path, title, contents[document_id])
         exported_paths.append(path)
@@ -214,11 +302,10 @@ def export_pdf_files(
     contents = {
         "resume": resume,
         "cover_letter": cover_letter,
-        "linkedin_message": linkedin_message,
     }
     exported_paths = []
 
-    for document_id, title in DOCUMENTS:
+    for document_id, title in APPLICATION_DOCUMENTS:
         path = output_dir / f"{document_id}.pdf"
         write_pdf(path, title, contents[document_id])
         exported_paths.append(path)
