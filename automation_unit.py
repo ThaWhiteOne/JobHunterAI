@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from draft_reviewer import build_recruiter_review_report, recruiter_review_path
 from file_utils import write_text_file
 
 
@@ -34,6 +35,21 @@ def parse_args() -> argparse.Namespace:
         "--write-report",
         action="store_true",
         help="Write automation_report.md beside the manifest.",
+    )
+
+    review_parser = subparsers.add_parser(
+        "review",
+        help="Review generated drafts like a recruiter before applying.",
+    )
+    review_parser.add_argument(
+        "manifest",
+        type=Path,
+        help="Path to application_manifest.json.",
+    )
+    review_parser.add_argument(
+        "--write-report",
+        action="store_true",
+        help="Write recruiter_review.md beside the manifest.",
     )
 
     return parser.parse_args()
@@ -131,9 +147,20 @@ def write_report(manifest_path: Path, report: str) -> Path:
     return report_path
 
 
+def write_recruiter_review(manifest_path: Path, report: str) -> Path:
+    report_path = recruiter_review_path(manifest_path)
+    write_text_file(report_path, report)
+    return report_path
+
+
 def run_check(manifest_path: Path) -> str:
     manifest = load_manifest(manifest_path)
     return build_check_report(manifest, manifest_path)
+
+
+def run_review(manifest_path: Path) -> str:
+    manifest = load_manifest(manifest_path)
+    return build_recruiter_review_report(manifest, manifest_path)
 
 
 def main() -> None:
@@ -147,6 +174,13 @@ def main() -> None:
                 report_path = write_report(args.manifest, report)
                 print("")
                 print(f"Report written: {report_path}")
+        elif args.command == "review":
+            report = run_review(args.manifest)
+            print(report)
+            if args.write_report:
+                report_path = write_recruiter_review(args.manifest, report)
+                print("")
+                print(f"Recruiter review written: {report_path}")
     except (FileNotFoundError, ValueError) as error:
         raise SystemExit(f"Automation Unit failed.\nError: {error}") from error
 

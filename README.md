@@ -16,6 +16,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Optionally prepares an offline AI brief for future tailoring
 - Optionally writes a JSON manifest for future automation handoff
 - Includes a safe Automation Unit checker for generated manifests
+- Includes an offline Recruiter Review Agent for draft quality checks
 - Tracks job applications with a local SQLite database
 - Works offline without OpenAI API calls or external services
 
@@ -116,6 +117,12 @@ Write the Automation Unit check as a report file:
 python automation_unit.py check outputs/example-ltd-support-engineer/application_manifest.json --write-report
 ```
 
+Review generated drafts like a recruiter:
+
+```bash
+python automation_unit.py review outputs/example-ltd-support-engineer/application_manifest.json --write-report
+```
+
 Generate files and save the application in the tracker:
 
 ```bash
@@ -162,6 +169,8 @@ When `--manifest` is used, JobHunterAI also writes `application_manifest.json` w
 
 When `--write-report` is used, the Automation Unit also writes `automation_report.md` beside the manifest.
 
+`automation_unit.py review` reads the generated resume, cover letter, and LinkedIn message from the manifest, then writes recruiter-style feedback. It checks for placeholders, missing files, weak length signals, keyword alignment, and claims that need manual verification. It does not submit applications or call an AI API.
+
 The `outputs/` folder is ignored by Git because the files are generated.
 
 ## Recommended Workflow
@@ -186,7 +195,13 @@ Then run the safe Automation Unit check:
 python automation_unit.py check outputs/example-ltd-support-engineer/application_manifest.json --write-report
 ```
 
-After reviewing the generated drafts and `automation_report.md`, apply manually through the job site or recruiter message.
+Then run the Recruiter Review Agent:
+
+```bash
+python automation_unit.py review outputs/example-ltd-support-engineer/application_manifest.json --write-report
+```
+
+After reviewing the generated drafts, `automation_report.md`, and `recruiter_review.md`, apply manually through the job site or recruiter message.
 
 ## Job Tracker
 
@@ -260,6 +275,7 @@ role_detector.py
 profile_selector.py
 generators.py
 document_exporter.py
+draft_reviewer.py
 html_exporter.py
 job_analyzer.py
 manifest_builder.py
@@ -315,7 +331,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, job analysis, AI brief generation, manifest generation, Automation Unit checks/reports, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, job analysis, AI brief generation, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 The full package command is also covered by the automated tests.
 
 ## Current Limitations
@@ -326,10 +342,11 @@ The full package command is also covered by the automated tests.
 - AI brief generation is offline and does not call an API yet.
 - Manifest generation prepares automation handoff data but does not submit applications.
 - Automation Unit currently validates packages and writes reports only; it does not apply to jobs.
+- Recruiter Review Agent is offline/rule-based for now; future AI mode can improve the review quality.
 - Job tracker is local-only and uses SQLite.
 
 ## Roadmap
 
 - Improve DOCX/PDF styling templates
 - Add optional AI mode later while keeping offline mode
-- Expand the Automation Unit after the offline workflow is reliable
+- Expand the Recruiter Review Agent with optional AI mode after the offline workflow is reliable

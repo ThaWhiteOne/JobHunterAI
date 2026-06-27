@@ -295,6 +295,67 @@ class CliTests(unittest.TestCase):
                 report_path.read_text(encoding="utf-8"),
             )
 
+    def test_automation_unit_can_review_generated_drafts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            generate_result = run_command(
+                [
+                    "main.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                    "--full-package",
+                ]
+            )
+            review_result = run_command(
+                [
+                    "automation_unit.py",
+                    "review",
+                    str(output_dir / "application_manifest.json"),
+                ]
+            )
+
+            self.assertEqual(generate_result.returncode, 0, generate_result.stderr)
+            self.assertEqual(review_result.returncode, 0, review_result.stderr)
+            self.assertIn("Recruiter Review Agent Report", review_result.stdout)
+            self.assertIn("Score:", review_result.stdout)
+            self.assertIn("Status:", review_result.stdout)
+
+    def test_automation_unit_can_write_recruiter_review(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            generate_result = run_command(
+                [
+                    "main.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                    "--full-package",
+                ]
+            )
+            review_result = run_command(
+                [
+                    "automation_unit.py",
+                    "review",
+                    str(output_dir / "application_manifest.json"),
+                    "--write-report",
+                ]
+            )
+            review_path = output_dir / "recruiter_review.md"
+
+            self.assertEqual(generate_result.returncode, 0, generate_result.stderr)
+            self.assertEqual(review_result.returncode, 0, review_result.stderr)
+            self.assertIn(str(review_path), review_result.stdout)
+            self.assertTrue(review_path.exists())
+            self.assertIn(
+                "Recruiter Review Agent Report",
+                review_path.read_text(encoding="utf-8"),
+            )
+
     def test_tracker_cli_add_list_and_stats(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"
