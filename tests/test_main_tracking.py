@@ -6,6 +6,10 @@ from unittest.mock import patch
 from config import OUTPUTS_DIR
 from main import (
     get_output_dir,
+    should_export_html,
+    should_generate_ai_brief,
+    should_generate_review_notes,
+    should_save_job_text,
     slugify,
     track_generated_application,
     validate_tracking_args,
@@ -27,6 +31,22 @@ def tracking_args(
         url=url,
         notes=notes,
         output_dir=output_dir,
+    )
+
+
+def package_args(
+    full_package: bool = False,
+    save_job_text: bool = False,
+    review_notes: bool = False,
+    ai_brief: bool = False,
+    export: str | None = None,
+) -> argparse.Namespace:
+    return argparse.Namespace(
+        full_package=full_package,
+        save_job_text=save_job_text,
+        review_notes=review_notes,
+        ai_brief=ai_brief,
+        export=export,
     )
 
 
@@ -59,6 +79,27 @@ class MainTrackingTests(unittest.TestCase):
             slugify("Junior Python Developer / APIs"),
             "junior-python-developer-apis",
         )
+
+    def test_full_package_enables_all_package_outputs(self) -> None:
+        args = package_args(full_package=True)
+
+        self.assertTrue(should_save_job_text(args))
+        self.assertTrue(should_generate_review_notes(args))
+        self.assertTrue(should_generate_ai_brief(args))
+        self.assertTrue(should_export_html(args))
+
+    def test_individual_package_flags_still_work(self) -> None:
+        args = package_args(
+            save_job_text=True,
+            review_notes=True,
+            ai_brief=True,
+            export="html",
+        )
+
+        self.assertTrue(should_save_job_text(args))
+        self.assertTrue(should_generate_review_notes(args))
+        self.assertTrue(should_generate_ai_brief(args))
+        self.assertTrue(should_export_html(args))
 
     def test_validate_tracking_args_allows_disabled_tracking(self) -> None:
         args = tracking_args(track=False, company="", position="")

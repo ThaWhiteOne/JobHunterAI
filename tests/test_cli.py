@@ -135,6 +135,40 @@ class CliTests(unittest.TestCase):
                 ai_brief_path.read_text(encoding="utf-8"),
             )
 
+    def test_main_can_generate_full_application_package(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            result = run_command(
+                [
+                    "main.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                    "--full-package",
+                ]
+            )
+
+            expected_files = [
+                "resume.md",
+                "cover_letter.md",
+                "linkedin_message.txt",
+                "job_description.txt",
+                "application_review.md",
+                "ai_brief.md",
+                "resume.html",
+                "cover_letter.html",
+                "linkedin_message.html",
+            ]
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            for filename in expected_files:
+                path = output_dir / filename
+                with self.subTest(filename=filename):
+                    self.assertIn(str(path), result.stdout)
+                    self.assertTrue(path.exists())
+
     def test_tracker_cli_add_list_and_stats(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"

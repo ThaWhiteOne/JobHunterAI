@@ -10,6 +10,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Detects the target role with keyword scoring
 - Selects the matching candidate profile
 - Generates a tailored resume, cover letter, and LinkedIn message
+- Can generate a full offline application package with one command
 - Optionally exports generated documents to simple HTML files
 - Optionally creates review notes with matched keywords and a pre-apply checklist
 - Optionally prepares an offline AI brief for future tailoring
@@ -45,6 +46,12 @@ Write generated files to a custom folder:
 
 ```bash
 python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer
+```
+
+Generate the full offline package for a real application draft:
+
+```bash
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --full-package
 ```
 
 Save the original job description beside the generated files:
@@ -84,6 +91,8 @@ By default, generated files are written to `outputs/`:
 - `outputs/resume.md`
 - `outputs/cover_letter.md`
 - `outputs/linkedin_message.txt`
+
+When `--full-package` is used, JobHunterAI also writes the original job description, review notes, AI brief, and HTML copies.
 
 When `--save-job-text` is used, JobHunterAI also writes `job_description.txt` to the same output folder.
 
@@ -224,6 +233,7 @@ python -m unittest
 ```
 
 The tests cover role detection, job analysis, AI brief generation, profile fallback behavior, basic document generation, HTML export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The full package command is also covered by the automated tests.
 
 ## Current Limitations
 

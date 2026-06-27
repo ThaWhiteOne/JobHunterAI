@@ -49,6 +49,14 @@ def parse_args() -> argparse.Namespace:
         help="Folder where generated files should be written.",
     )
     parser.add_argument(
+        "--full-package",
+        action="store_true",
+        help=(
+            "Generate the full offline package: drafts, job text, review notes, "
+            "AI brief, and HTML copies."
+        ),
+    )
+    parser.add_argument(
         "--save-job-text",
         action="store_true",
         help="Save the original job description beside the generated files.",
@@ -113,6 +121,22 @@ def get_output_dir(args: argparse.Namespace) -> Path:
     return args.output_dir or OUTPUTS_DIR
 
 
+def should_save_job_text(args: argparse.Namespace) -> bool:
+    return args.save_job_text or args.full_package
+
+
+def should_generate_review_notes(args: argparse.Namespace) -> bool:
+    return args.review_notes or args.full_package
+
+
+def should_generate_ai_brief(args: argparse.Namespace) -> bool:
+    return args.ai_brief or args.full_package
+
+
+def should_export_html(args: argparse.Namespace) -> bool:
+    return args.export == "html" or args.full_package
+
+
 def validate_tracking_args(args: argparse.Namespace) -> None:
     if not args.track:
         return
@@ -175,12 +199,12 @@ def main() -> None:
         write_text_file(resume_path, resume)
         write_text_file(cover_letter_path, cover_letter)
         write_text_file(linkedin_message_path, linkedin_message)
-        if args.save_job_text:
+        if should_save_job_text(args):
             job_description_path = output_dir / "job_description.txt"
             write_text_file(job_description_path, job_description)
             generated_files.append(job_description_path)
 
-        if args.review_notes:
+        if should_generate_review_notes(args):
             review_notes_path = output_dir / "application_review.md"
             review_notes = generate_application_review(
                 role,
@@ -191,7 +215,7 @@ def main() -> None:
             write_text_file(review_notes_path, review_notes)
             generated_files.append(review_notes_path)
 
-        if args.ai_brief:
+        if should_generate_ai_brief(args):
             ai_brief_path = output_dir / "ai_brief.md"
             ai_brief = generate_ai_brief(
                 role,
@@ -206,7 +230,7 @@ def main() -> None:
             write_text_file(ai_brief_path, ai_brief)
             generated_files.append(ai_brief_path)
 
-        if args.export == "html":
+        if should_export_html(args):
             generated_files.extend(
                 export_html_files(
                     output_dir,
