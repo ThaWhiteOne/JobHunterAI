@@ -12,6 +12,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Generates a tailored resume, cover letter, and LinkedIn message
 - Optionally exports generated documents to simple HTML files
 - Optionally creates review notes with matched keywords and a pre-apply checklist
+- Optionally prepares an offline AI brief for future tailoring
 - Tracks job applications with a local SQLite database
 - Works offline without OpenAI API calls or external services
 
@@ -64,6 +65,12 @@ Create application review notes before sending:
 python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --review-notes
 ```
 
+Prepare an offline AI brief for a future AI/automation step:
+
+```bash
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --ai-brief
+```
+
 Generate files and save the application in the tracker:
 
 ```bash
@@ -87,6 +94,8 @@ When `--export html` is used, JobHunterAI also writes:
 - `outputs/linkedin_message.html`
 
 When `--review-notes` is used, JobHunterAI also writes `application_review.md` with detected role details, matched keywords, extracted requirement lines, and a checklist.
+
+When `--ai-brief` is used, JobHunterAI also writes `ai_brief.md` with the job description, selected profile, generated drafts, matched keywords, and strict AI guardrails. This file is only a preparation artifact; it does not call an AI API.
 
 The `outputs/` folder is ignored by Git because the files are generated.
 
@@ -154,6 +163,7 @@ python tracker.py list
 ```text
 main.py
 tracker.py
+ai_prompt_builder.py
 config.py
 file_utils.py
 role_detector.py
@@ -213,13 +223,14 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, job analysis, profile fallback behavior, basic document generation, HTML export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, job analysis, AI brief generation, profile fallback behavior, basic document generation, HTML export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 
 ## Current Limitations
 
 - Uses simple keyword scoring instead of AI.
 - Reads one job description file per run.
 - Generates Markdown, text, and simple HTML files only.
+- AI brief generation is offline and does not call an API yet.
 - Job tracker is local-only and uses SQLite.
 
 ## Roadmap

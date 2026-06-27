@@ -2,6 +2,7 @@ import argparse
 import re
 from pathlib import Path
 
+from ai_prompt_builder import generate_ai_brief
 from config import (
     JOB_TRACKER_DB_PATH,
     OUTPUTS_DIR,
@@ -61,6 +62,11 @@ def parse_args() -> argparse.Namespace:
         "--review-notes",
         action="store_true",
         help="Generate application_review.md with matched keywords and checklist.",
+    )
+    parser.add_argument(
+        "--ai-brief",
+        action="store_true",
+        help="Generate ai_brief.md for a future AI/automation step.",
     )
     parser.add_argument(
         "--track",
@@ -184,6 +190,21 @@ def main() -> None:
             )
             write_text_file(review_notes_path, review_notes)
             generated_files.append(review_notes_path)
+
+        if args.ai_brief:
+            ai_brief_path = output_dir / "ai_brief.md"
+            ai_brief = generate_ai_brief(
+                role,
+                role_display_name,
+                profile,
+                job_description,
+                scores,
+                resume,
+                cover_letter,
+                linkedin_message,
+            )
+            write_text_file(ai_brief_path, ai_brief)
+            generated_files.append(ai_brief_path)
 
         if args.export == "html":
             generated_files.extend(

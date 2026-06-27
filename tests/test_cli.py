@@ -110,6 +110,31 @@ class CliTests(unittest.TestCase):
                 review_notes_path.read_text(encoding="utf-8"),
             )
 
+    def test_main_can_generate_ai_brief(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            result = run_command(
+                [
+                    "main.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                    "--ai-brief",
+                ]
+            )
+
+            ai_brief_path = output_dir / "ai_brief.md"
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn(str(ai_brief_path), result.stdout)
+            self.assertTrue(ai_brief_path.exists())
+            self.assertIn(
+                "Do not invent employers",
+                ai_brief_path.read_text(encoding="utf-8"),
+            )
+
     def test_tracker_cli_add_list_and_stats(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"
