@@ -63,6 +63,28 @@ class CliTests(unittest.TestCase):
             self.assertTrue(job_description_path.exists())
             self.assertIn("SQL", job_description_path.read_text(encoding="utf-8"))
 
+    def test_main_can_export_html_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            result = run_command(
+                [
+                    "main.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                    "--export",
+                    "html",
+                ]
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn(str(output_dir / "resume.html"), result.stdout)
+            self.assertTrue((output_dir / "resume.html").exists())
+            self.assertTrue((output_dir / "cover_letter.html").exists())
+            self.assertTrue((output_dir / "linkedin_message.html").exists())
+
     def test_tracker_cli_add_list_and_stats(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"

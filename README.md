@@ -10,6 +10,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Detects the target role with keyword scoring
 - Selects the matching candidate profile
 - Generates a tailored resume, cover letter, and LinkedIn message
+- Optionally exports generated documents to simple HTML files
 - Tracks job applications with a local SQLite database
 - Works offline without OpenAI API calls or external services
 
@@ -50,6 +51,12 @@ Save the original job description beside the generated files:
 python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --save-job-text
 ```
 
+Export browser-friendly HTML copies:
+
+```bash
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --export html
+```
+
 Generate files and save the application in the tracker:
 
 ```bash
@@ -65,6 +72,12 @@ By default, generated files are written to `outputs/`:
 - `outputs/linkedin_message.txt`
 
 When `--save-job-text` is used, JobHunterAI also writes `job_description.txt` to the same output folder.
+
+When `--export html` is used, JobHunterAI also writes:
+
+- `outputs/resume.html`
+- `outputs/cover_letter.html`
+- `outputs/linkedin_message.html`
 
 The `outputs/` folder is ignored by Git because the files are generated.
 
@@ -137,6 +150,7 @@ file_utils.py
 role_detector.py
 profile_selector.py
 generators.py
+html_exporter.py
 tracker_db.py
 README.md
 requirements.txt
@@ -189,13 +203,13 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, profile fallback behavior, basic document generation, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, profile fallback behavior, basic document generation, HTML export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 
 ## Current Limitations
 
 - Uses simple keyword scoring instead of AI.
 - Reads one job description file per run.
-- Generates Markdown/text files only.
+- Generates Markdown, text, and simple HTML files only.
 - Job tracker is local-only and uses SQLite.
 
 ## Roadmap

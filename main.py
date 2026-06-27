@@ -14,6 +14,7 @@ from generators import (
     generate_linkedin_message,
     generate_resume,
 )
+from html_exporter import export_html_files
 from profile_selector import select_profile
 from role_detector import detect_role, score_roles
 from tracker_db import add_job
@@ -49,6 +50,11 @@ def parse_args() -> argparse.Namespace:
         "--save-job-text",
         action="store_true",
         help="Save the original job description beside the generated files.",
+    )
+    parser.add_argument(
+        "--export",
+        choices=["html"],
+        help="Also export generated documents to the selected format.",
     )
     parser.add_argument(
         "--track",
@@ -160,6 +166,16 @@ def main() -> None:
             job_description_path = output_dir / "job_description.txt"
             write_text_file(job_description_path, job_description)
             generated_files.append(job_description_path)
+
+        if args.export == "html":
+            generated_files.extend(
+                export_html_files(
+                    output_dir,
+                    resume,
+                    cover_letter,
+                    linkedin_message,
+                )
+            )
 
         tracked_job_id = track_generated_application(args, role)
 
