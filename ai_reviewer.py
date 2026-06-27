@@ -158,15 +158,16 @@ def extract_response_text(response_data: dict[str, Any]) -> str:
     raise ValueError("OpenAI response did not include text output.")
 
 
-def request_openai_review(
+def request_openai_text(
     prompt: str,
     api_key: str,
     model: str,
+    instructions: str,
     timeout_seconds: int = 60,
 ) -> str:
     payload = {
         "model": model,
-        "instructions": AI_REVIEW_INSTRUCTIONS,
+        "instructions": instructions,
         "input": prompt,
         "store": False,
     }
@@ -195,6 +196,21 @@ def request_openai_review(
         raise ValueError("OpenAI API returned an unexpected response.")
 
     return extract_response_text(response_data)
+
+
+def request_openai_review(
+    prompt: str,
+    api_key: str,
+    model: str,
+    timeout_seconds: int = 60,
+) -> str:
+    return request_openai_text(
+        prompt,
+        api_key,
+        model,
+        AI_REVIEW_INSTRUCTIONS,
+        timeout_seconds,
+    )
 
 
 def build_ai_review_report(review_text: str, model: str) -> str:

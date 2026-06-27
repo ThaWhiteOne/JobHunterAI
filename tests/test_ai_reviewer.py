@@ -52,8 +52,14 @@ class AIReviewerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             env_path = Path(temp_dir) / ".env"
 
-            with self.assertRaises(AIReviewNotConfiguredError):
-                run_ai_review({}, Path(temp_dir) / "application_manifest.json", "", env_path)
+            with patch.dict("os.environ", {}, clear=True):
+                with self.assertRaises(AIReviewNotConfiguredError):
+                    run_ai_review(
+                        {},
+                        Path(temp_dir) / "application_manifest.json",
+                        "",
+                        env_path,
+                    )
 
     def test_build_ai_review_prompt_includes_drafts_and_guardrails(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

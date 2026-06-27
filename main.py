@@ -2,10 +2,13 @@ import argparse
 import re
 from pathlib import Path
 
+from ai_draft_generator import run_ai_draft_generation
+from ai_reviewer import AIReviewNotConfiguredError
 from ai_prompt_builder import generate_ai_brief
 from config import (
     JOB_TRACKER_DB_PATH,
     OUTPUTS_DIR,
+    RESUME_TEMPLATE_PATH,
     ROLE_DISPLAY_NAMES,
     SAMPLE_JOB_PATH,
 )
@@ -77,6 +80,11 @@ def parse_args() -> argparse.Namespace:
         "--ai-brief",
         action="store_true",
         help="Generate ai_brief.md for a future AI/automation step.",
+    )
+    parser.add_argument(
+        "--ai-drafts",
+        action="store_true",
+        help="Use OpenAI to generate tailored drafts from the selected profile.",
     )
     parser.add_argument(
         "--manifest",
@@ -204,6 +212,20 @@ def main() -> None:
             job_description,
         )
         linkedin_message = generate_linkedin_message(role, role_display_name)
+        if args.ai_drafts:
+            try:
+                ai_drafts = run_ai_draft_generation(
+                    role_display_name,
+                    profile,
+                    job_description,
+                    read_text_file(RESUME_TEMPLATE_PATH, required=True),
+                )
+            except AIReviewNotConfiguredError as error:
+                raise ValueError(f"--ai-drafts requires AI configuration. {error}") from error
+
+            resume = ai_drafts["resume_md"]
+            cover_letter = ai_drafts["cover_letter_md"]
+            linkedin_message = ai_drafts["linkedin_message_txt"]
 
         output_dir = get_output_dir(args)
         resume_path = output_dir / "resume.md"
@@ -305,6 +327,7 @@ def main() -> None:
             print(f"Matched keywords: {job_analysis.matched_keywords}")
             print(f"Requirement lines: {job_analysis.requirement_lines}")
             print(f"Profile used: {profile_path}")
+            print(f"AI drafts: {'enabled' if args.ai_drafts else 'disabled'}")
             if used_fallback:
                 print(
                     "Note: role-specific profile was missing/empty. "
