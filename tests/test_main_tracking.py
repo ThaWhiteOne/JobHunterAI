@@ -8,6 +8,7 @@ from main import (
     get_output_dir,
     should_export_html,
     should_generate_ai_brief,
+    should_generate_manifest,
     should_generate_review_notes,
     should_save_job_text,
     slugify,
@@ -39,6 +40,7 @@ def package_args(
     save_job_text: bool = False,
     review_notes: bool = False,
     ai_brief: bool = False,
+    manifest: bool = False,
     export: str | None = None,
 ) -> argparse.Namespace:
     return argparse.Namespace(
@@ -46,6 +48,7 @@ def package_args(
         save_job_text=save_job_text,
         review_notes=review_notes,
         ai_brief=ai_brief,
+        manifest=manifest,
         export=export,
     )
 
@@ -87,12 +90,14 @@ class MainTrackingTests(unittest.TestCase):
         self.assertTrue(should_generate_review_notes(args))
         self.assertTrue(should_generate_ai_brief(args))
         self.assertTrue(should_export_html(args))
+        self.assertTrue(should_generate_manifest(args))
 
     def test_individual_package_flags_still_work(self) -> None:
         args = package_args(
             save_job_text=True,
             review_notes=True,
             ai_brief=True,
+            manifest=True,
             export="html",
         )
 
@@ -100,6 +105,7 @@ class MainTrackingTests(unittest.TestCase):
         self.assertTrue(should_generate_review_notes(args))
         self.assertTrue(should_generate_ai_brief(args))
         self.assertTrue(should_export_html(args))
+        self.assertTrue(should_generate_manifest(args))
 
     def test_validate_tracking_args_allows_disabled_tracking(self) -> None:
         args = tracking_args(track=False, company="", position="")

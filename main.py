@@ -17,6 +17,7 @@ from generators import (
 )
 from html_exporter import export_html_files
 from job_analyzer import analyze_job, generate_application_review
+from manifest_builder import generate_manifest
 from profile_selector import select_profile
 from role_detector import detect_role, score_roles
 from tracker_db import add_job
@@ -77,6 +78,11 @@ def parse_args() -> argparse.Namespace:
         help="Generate ai_brief.md for a future AI/automation step.",
     )
     parser.add_argument(
+        "--manifest",
+        action="store_true",
+        help="Generate application_manifest.json for automation handoff.",
+    )
+    parser.add_argument(
         "--track",
         action="store_true",
         help="Save this generated application to the local job tracker.",
@@ -135,6 +141,10 @@ def should_generate_ai_brief(args: argparse.Namespace) -> bool:
 
 def should_export_html(args: argparse.Namespace) -> bool:
     return args.export == "html" or args.full_package
+
+
+def should_generate_manifest(args: argparse.Namespace) -> bool:
+    return args.manifest or args.full_package
 
 
 def validate_tracking_args(args: argparse.Namespace) -> None:
@@ -241,6 +251,23 @@ def main() -> None:
             )
 
         tracked_job_id = track_generated_application(args, role)
+        if should_generate_manifest(args):
+            manifest_path = output_dir / "application_manifest.json"
+            manifest = generate_manifest(
+                job_path,
+                output_dir,
+                role,
+                role_display_name,
+                scores,
+                profile_path,
+                used_fallback,
+                job_analysis,
+                generated_files,
+                manifest_path,
+                tracked_job_id,
+            )
+            write_text_file(manifest_path, manifest)
+            generated_files.append(manifest_path)
 
         print("JobHunterAI finished successfully.")
         print(f"Detected role: {role} ({role_display_name})")

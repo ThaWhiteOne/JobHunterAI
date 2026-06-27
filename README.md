@@ -14,6 +14,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Optionally exports generated documents to simple HTML files
 - Optionally creates review notes with matched keywords and a pre-apply checklist
 - Optionally prepares an offline AI brief for future tailoring
+- Optionally writes a JSON manifest for future automation handoff
 - Tracks job applications with a local SQLite database
 - Works offline without OpenAI API calls or external services
 
@@ -78,6 +79,12 @@ Prepare an offline AI brief for a future AI/automation step:
 python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --ai-brief
 ```
 
+Create a machine-readable application manifest:
+
+```bash
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --manifest
+```
+
 Generate files and save the application in the tracker:
 
 ```bash
@@ -105,6 +112,8 @@ When `--export html` is used, JobHunterAI also writes:
 When `--review-notes` is used, JobHunterAI also writes `application_review.md` with detected role details, matched keywords, extracted requirement lines, and a checklist.
 
 When `--ai-brief` is used, JobHunterAI also writes `ai_brief.md` with the job description, selected profile, generated drafts, matched keywords, and strict AI guardrails. This file is only a preparation artifact; it does not call an AI API.
+
+When `--manifest` is used, JobHunterAI also writes `application_manifest.json` with detected role details, generated file paths, matched keywords, tracker ID if available, and automation guardrails.
 
 The `outputs/` folder is ignored by Git because the files are generated.
 
@@ -180,6 +189,7 @@ profile_selector.py
 generators.py
 html_exporter.py
 job_analyzer.py
+manifest_builder.py
 tracker_db.py
 README.md
 requirements.txt
@@ -232,7 +242,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, job analysis, AI brief generation, profile fallback behavior, basic document generation, HTML export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, job analysis, AI brief generation, manifest generation, profile fallback behavior, basic document generation, HTML export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 The full package command is also covered by the automated tests.
 
 ## Current Limitations
@@ -241,6 +251,7 @@ The full package command is also covered by the automated tests.
 - Reads one job description file per run.
 - Generates Markdown, text, and simple HTML files only.
 - AI brief generation is offline and does not call an API yet.
+- Manifest generation prepares automation handoff data but does not submit applications.
 - Job tracker is local-only and uses SQLite.
 
 ## Roadmap

@@ -1,4 +1,5 @@
 import os
+import json
 import subprocess
 import sys
 import tempfile
@@ -135,6 +136,29 @@ class CliTests(unittest.TestCase):
                 ai_brief_path.read_text(encoding="utf-8"),
             )
 
+    def test_main_can_generate_application_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            result = run_command(
+                [
+                    "main.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                    "--manifest",
+                ]
+            )
+
+            manifest_path = output_dir / "application_manifest.json"
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn(str(manifest_path), result.stdout)
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["detected_role"], "support")
+            self.assertIn(manifest_path.as_posix(), manifest["generated_files"])
+
     def test_main_can_generate_full_application_package(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir) / "generated"
@@ -157,6 +181,7 @@ class CliTests(unittest.TestCase):
                 "job_description.txt",
                 "application_review.md",
                 "ai_brief.md",
+                "application_manifest.json",
                 "resume.html",
                 "cover_letter.html",
                 "linkedin_message.html",
