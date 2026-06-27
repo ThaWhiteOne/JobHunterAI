@@ -3,6 +3,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from file_utils import write_text_file
+
 
 REQUIRED_MANIFEST_KEYS = [
     "detected_role",
@@ -27,6 +29,11 @@ def parse_args() -> argparse.Namespace:
         "manifest",
         type=Path,
         help="Path to application_manifest.json.",
+    )
+    check_parser.add_argument(
+        "--write-report",
+        action="store_true",
+        help="Write automation_report.md beside the manifest.",
     )
 
     return parser.parse_args()
@@ -114,6 +121,16 @@ def build_check_report(manifest: dict[str, Any], manifest_path: Path) -> str:
     return "\n".join(lines)
 
 
+def get_report_path(manifest_path: Path) -> Path:
+    return manifest_path.parent / "automation_report.md"
+
+
+def write_report(manifest_path: Path, report: str) -> Path:
+    report_path = get_report_path(manifest_path)
+    write_text_file(report_path, report)
+    return report_path
+
+
 def run_check(manifest_path: Path) -> str:
     manifest = load_manifest(manifest_path)
     return build_check_report(manifest, manifest_path)
@@ -124,7 +141,12 @@ def main() -> None:
 
     try:
         if args.command == "check":
-            print(run_check(args.manifest))
+            report = run_check(args.manifest)
+            print(report)
+            if args.write_report:
+                report_path = write_report(args.manifest, report)
+                print("")
+                print(f"Report written: {report_path}")
     except (FileNotFoundError, ValueError) as error:
         raise SystemExit(f"Automation Unit failed.\nError: {error}") from error
 

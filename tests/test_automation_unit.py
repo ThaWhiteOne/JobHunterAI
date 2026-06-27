@@ -5,9 +5,11 @@ from pathlib import Path
 
 from automation_unit import (
     build_check_report,
+    get_report_path,
     load_manifest,
     missing_required_keys,
     run_check,
+    write_report,
 )
 
 
@@ -59,6 +61,19 @@ class AutomationUnitTests(unittest.TestCase):
         report = build_check_report(manifest, Path("application_manifest.json"))
 
         self.assertIn("Missing generated files: missing.md", report)
+
+    def test_write_report_saves_report_beside_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manifest_path = Path(temp_dir) / "application_manifest.json"
+
+            report_path = write_report(manifest_path, "Automation report")
+
+            self.assertEqual(report_path, get_report_path(manifest_path))
+            self.assertTrue(report_path.exists())
+            self.assertEqual(
+                report_path.read_text(encoding="utf-8").strip(),
+                "Automation report",
+            )
 
     def test_load_manifest_rejects_invalid_json(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

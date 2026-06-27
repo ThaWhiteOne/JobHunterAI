@@ -223,6 +223,39 @@ class CliTests(unittest.TestCase):
             self.assertIn("Missing generated files: none", check_result.stdout)
             self.assertIn("Do not submit applications automatically", check_result.stdout)
 
+    def test_automation_unit_can_write_report(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            generate_result = run_command(
+                [
+                    "main.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                    "--full-package",
+                ]
+            )
+            check_result = run_command(
+                [
+                    "automation_unit.py",
+                    "check",
+                    str(output_dir / "application_manifest.json"),
+                    "--write-report",
+                ]
+            )
+            report_path = output_dir / "automation_report.md"
+
+            self.assertEqual(generate_result.returncode, 0, generate_result.stderr)
+            self.assertEqual(check_result.returncode, 0, check_result.stderr)
+            self.assertIn(str(report_path), check_result.stdout)
+            self.assertTrue(report_path.exists())
+            self.assertIn(
+                "Automation Unit check complete.",
+                report_path.read_text(encoding="utf-8"),
+            )
+
     def test_tracker_cli_add_list_and_stats(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"

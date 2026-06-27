@@ -92,6 +92,12 @@ Check a generated package with the safe Automation Unit:
 python automation_unit.py check outputs/example-ltd-support-engineer/application_manifest.json
 ```
 
+Write the Automation Unit check as a report file:
+
+```bash
+python automation_unit.py check outputs/example-ltd-support-engineer/application_manifest.json --write-report
+```
+
 Generate files and save the application in the tracker:
 
 ```bash
@@ -123,6 +129,8 @@ When `--ai-brief` is used, JobHunterAI also writes `ai_brief.md` with the job de
 When `--manifest` is used, JobHunterAI also writes `application_manifest.json` with detected role details, generated file paths, matched keywords, tracker ID if available, and automation guardrails.
 
 `automation_unit.py check` reads `application_manifest.json`, confirms expected files exist, prints the detected role, and repeats the guardrails. It does not submit applications or call external APIs.
+
+When `--write-report` is used, the Automation Unit also writes `automation_report.md` beside the manifest.
 
 The `outputs/` folder is ignored by Git because the files are generated.
 
@@ -252,7 +260,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, job analysis, AI brief generation, manifest generation, Automation Unit checks, profile fallback behavior, basic document generation, HTML export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, job analysis, AI brief generation, manifest generation, Automation Unit checks/reports, profile fallback behavior, basic document generation, HTML export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 The full package command is also covered by the automated tests.
 
 ## Current Limitations
@@ -262,7 +270,7 @@ The full package command is also covered by the automated tests.
 - Generates Markdown, text, and simple HTML files only.
 - AI brief generation is offline and does not call an API yet.
 - Manifest generation prepares automation handoff data but does not submit applications.
-- Automation Unit currently validates packages only; it does not apply to jobs.
+- Automation Unit currently validates packages and writes reports only; it does not apply to jobs.
 - Job tracker is local-only and uses SQLite.
 
 ## Roadmap
