@@ -15,6 +15,7 @@ from generators import (
     generate_resume,
 )
 from html_exporter import export_html_files
+from job_analyzer import analyze_job, generate_application_review
 from profile_selector import select_profile
 from role_detector import detect_role, score_roles
 from tracker_db import add_job
@@ -55,6 +56,11 @@ def parse_args() -> argparse.Namespace:
         "--export",
         choices=["html"],
         help="Also export generated documents to the selected format.",
+    )
+    parser.add_argument(
+        "--review-notes",
+        action="store_true",
+        help="Generate application_review.md with matched keywords and checklist.",
     )
     parser.add_argument(
         "--track",
@@ -137,6 +143,7 @@ def main() -> None:
         role = detect_role(job_description)
         scores = score_roles(job_description)
         role_display_name = ROLE_DISPLAY_NAMES.get(role, role.title())
+        job_analysis = analyze_job(job_description, role)
 
         profile, profile_path, used_fallback = select_profile(role)
 
@@ -167,6 +174,17 @@ def main() -> None:
             write_text_file(job_description_path, job_description)
             generated_files.append(job_description_path)
 
+        if args.review_notes:
+            review_notes_path = output_dir / "application_review.md"
+            review_notes = generate_application_review(
+                role,
+                role_display_name,
+                job_description,
+                scores,
+            )
+            write_text_file(review_notes_path, review_notes)
+            generated_files.append(review_notes_path)
+
         if args.export == "html":
             generated_files.extend(
                 export_html_files(
@@ -185,6 +203,8 @@ def main() -> None:
             print(f"Job file: {job_path}")
             print(f"Output directory: {output_dir}")
             print(f"Role scores: {scores}")
+            print(f"Matched keywords: {job_analysis.matched_keywords}")
+            print(f"Requirement lines: {job_analysis.requirement_lines}")
             print(f"Profile used: {profile_path}")
             if used_fallback:
                 print(

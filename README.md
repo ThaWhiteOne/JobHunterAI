@@ -11,6 +11,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Selects the matching candidate profile
 - Generates a tailored resume, cover letter, and LinkedIn message
 - Optionally exports generated documents to simple HTML files
+- Optionally creates review notes with matched keywords and a pre-apply checklist
 - Tracks job applications with a local SQLite database
 - Works offline without OpenAI API calls or external services
 
@@ -57,6 +58,12 @@ Export browser-friendly HTML copies:
 python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --export html
 ```
 
+Create application review notes before sending:
+
+```bash
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --review-notes
+```
+
 Generate files and save the application in the tracker:
 
 ```bash
@@ -78,6 +85,8 @@ When `--export html` is used, JobHunterAI also writes:
 - `outputs/resume.html`
 - `outputs/cover_letter.html`
 - `outputs/linkedin_message.html`
+
+When `--review-notes` is used, JobHunterAI also writes `application_review.md` with detected role details, matched keywords, extracted requirement lines, and a checklist.
 
 The `outputs/` folder is ignored by Git because the files are generated.
 
@@ -151,6 +160,7 @@ role_detector.py
 profile_selector.py
 generators.py
 html_exporter.py
+job_analyzer.py
 tracker_db.py
 README.md
 requirements.txt
@@ -203,7 +213,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, profile fallback behavior, basic document generation, HTML export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, job analysis, profile fallback behavior, basic document generation, HTML export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 
 ## Current Limitations
 
@@ -216,3 +226,4 @@ The tests cover role detection, profile fallback behavior, basic document genera
 
 - Add DOCX/PDF export
 - Add optional AI mode later while keeping offline mode
+- Add an automation/AI unit after the offline workflow is reliable
