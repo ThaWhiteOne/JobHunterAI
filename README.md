@@ -12,6 +12,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Generates a tailored resume, cover letter, and LinkedIn message
 - Can generate a full offline application package with one command
 - Optionally uses AI to generate stronger tailored drafts from the selected profile
+- Optionally uses AI to automatically revise drafts before files are written
 - Optionally exports generated documents to simple HTML, DOCX, and PDF files
 - Optionally creates review notes with matched keywords and a pre-apply checklist
 - Optionally prepares an offline AI brief for future tailoring
@@ -107,6 +108,12 @@ Generate the drafts with AI using the selected profile as the source of truth:
 python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --full-package --ai-drafts
 ```
 
+Generate AI drafts and automatically revise them before writing final files:
+
+```bash
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --full-package --ai-drafts --ai-auto-revise
+```
+
 Create a machine-readable application manifest:
 
 ```bash
@@ -179,6 +186,8 @@ When `--ai-brief` is used, JobHunterAI also writes `ai_brief.md` with the job de
 
 When `--ai-drafts` is used, JobHunterAI asks OpenAI to generate `resume.md`, `cover_letter.md`, and `linkedin_message.txt` from the selected profile, job description, and template guidance. It is designed for the future fully automated workflow: update the profile/template once, then let the tool generate job-specific drafts without per-application editing.
 
+When `--ai-auto-revise` is used, JobHunterAI sends the generated drafts through a second AI recruiter/editor pass before writing the final files. It also writes `ai_revision_notes.md` so you can see what the automated revision changed.
+
 When `--manifest` is used, JobHunterAI also writes `application_manifest.json` with detected role details, generated file paths, matched keywords, tracker ID if available, and automation guardrails.
 
 `automation_unit.py check` reads `application_manifest.json`, confirms expected files exist, prints the detected role, and repeats the guardrails. It does not submit applications or call external APIs.
@@ -214,6 +223,12 @@ For an AI-generated application draft:
 python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --full-package --ai-drafts
 ```
 
+For the most automated draft flow:
+
+```bash
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --full-package --ai-drafts --ai-auto-revise
+```
+
 Review these files before applying:
 
 - `resume.md` or `resume.docx`
@@ -221,6 +236,7 @@ Review these files before applying:
 - `linkedin_message.txt`
 - `application_review.md`
 - `ai_brief.md`
+- `ai_revision_notes.md` when `--ai-auto-revise` is used
 
 Then run the safe Automation Unit check:
 
@@ -308,6 +324,7 @@ main.py
 tracker.py
 automation_unit.py
 ai_draft_generator.py
+ai_draft_reviser.py
 ai_reviewer.py
 ai_prompt_builder.py
 config.py
@@ -372,8 +389,8 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, job analysis, AI brief generation, AI draft parsing, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
-AI draft/reviewer tests use mocks and do not call the OpenAI API.
+The tests cover role detection, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+AI draft/revision/reviewer tests use mocks and do not call the OpenAI API.
 The full package command is also covered by the automated tests.
 
 ## Current Limitations
@@ -381,7 +398,7 @@ The full package command is also covered by the automated tests.
 - Uses simple keyword scoring for role detection.
 - Reads one job description file per run.
 - DOCX/PDF exports are simple offline documents for the resume and cover letter, not custom-designed templates.
-- AI brief generation is offline. Optional AI draft generation and recruiter review only run when requested.
+- AI brief generation is offline. Optional AI draft generation, automatic revision, and recruiter review only run when requested.
 - Manifest generation prepares automation handoff data but does not submit applications.
 - Automation Unit currently validates packages and writes reports only; it does not apply to jobs.
 - Recruiter Review Agent is offline/rule-based by default; optional AI mode can add a second review pass.
@@ -391,5 +408,5 @@ The full package command is also covered by the automated tests.
 
 - Improve DOCX/PDF styling templates
 - Refine optional AI review prompts with real application feedback
-- Add an AI revise loop that fixes drafts automatically after review
+- Add controlled browser/job-site automation with explicit user approval gates
 - Add controlled job search/import flows without automatic submissions

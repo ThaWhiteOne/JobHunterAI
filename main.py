@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 
 from ai_draft_generator import run_ai_draft_generation
+from ai_draft_reviser import REVISION_NOTES_KEY, run_ai_draft_revision
 from ai_reviewer import AIReviewNotConfiguredError
 from ai_prompt_builder import generate_ai_brief
 from config import (
@@ -85,6 +86,11 @@ def parse_args() -> argparse.Namespace:
         "--ai-drafts",
         action="store_true",
         help="Use OpenAI to generate tailored drafts from the selected profile.",
+    )
+    parser.add_argument(
+        "--ai-auto-revise",
+        action="store_true",
+        help="Use OpenAI to revise generated drafts automatically before writing files.",
     )
     parser.add_argument(
         "--manifest",
@@ -226,6 +232,26 @@ def main() -> None:
             resume = ai_drafts["resume_md"]
             cover_letter = ai_drafts["cover_letter_md"]
             linkedin_message = ai_drafts["linkedin_message_txt"]
+        revision_notes = ""
+        if args.ai_auto_revise:
+            try:
+                revised_drafts = run_ai_draft_revision(
+                    role_display_name,
+                    profile,
+                    job_description,
+                    resume,
+                    cover_letter,
+                    linkedin_message,
+                )
+            except AIReviewNotConfiguredError as error:
+                raise ValueError(
+                    f"--ai-auto-revise requires AI configuration. {error}"
+                ) from error
+
+            resume = revised_drafts["resume_md"]
+            cover_letter = revised_drafts["cover_letter_md"]
+            linkedin_message = revised_drafts["linkedin_message_txt"]
+            revision_notes = revised_drafts[REVISION_NOTES_KEY]
 
         output_dir = get_output_dir(args)
         resume_path = output_dir / "resume.md"
@@ -240,6 +266,10 @@ def main() -> None:
         write_text_file(resume_path, resume)
         write_text_file(cover_letter_path, cover_letter)
         write_text_file(linkedin_message_path, linkedin_message)
+        if revision_notes:
+            revision_notes_path = output_dir / "ai_revision_notes.md"
+            write_text_file(revision_notes_path, revision_notes)
+            generated_files.append(revision_notes_path)
         if should_save_job_text(args):
             job_description_path = output_dir / "job_description.txt"
             write_text_file(job_description_path, job_description)
@@ -328,6 +358,10 @@ def main() -> None:
             print(f"Requirement lines: {job_analysis.requirement_lines}")
             print(f"Profile used: {profile_path}")
             print(f"AI drafts: {'enabled' if args.ai_drafts else 'disabled'}")
+            print(
+                "AI auto-revise: "
+                f"{'enabled' if args.ai_auto_revise else 'disabled'}"
+            )
             if used_fallback:
                 print(
                     "Note: role-specific profile was missing/empty. "
