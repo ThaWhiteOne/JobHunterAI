@@ -6,7 +6,9 @@ from unittest.mock import patch
 from config import OUTPUTS_DIR
 from main import (
     get_output_dir,
+    should_export_docx,
     should_export_html,
+    should_export_pdf,
     should_generate_ai_brief,
     should_generate_manifest,
     should_generate_review_notes,
@@ -90,6 +92,8 @@ class MainTrackingTests(unittest.TestCase):
         self.assertTrue(should_generate_review_notes(args))
         self.assertTrue(should_generate_ai_brief(args))
         self.assertTrue(should_export_html(args))
+        self.assertTrue(should_export_docx(args))
+        self.assertTrue(should_export_pdf(args))
         self.assertTrue(should_generate_manifest(args))
 
     def test_individual_package_flags_still_work(self) -> None:
@@ -106,6 +110,13 @@ class MainTrackingTests(unittest.TestCase):
         self.assertTrue(should_generate_ai_brief(args))
         self.assertTrue(should_export_html(args))
         self.assertTrue(should_generate_manifest(args))
+
+    def test_export_all_enables_all_document_exports(self) -> None:
+        args = package_args(export="all")
+
+        self.assertTrue(should_export_html(args))
+        self.assertTrue(should_export_docx(args))
+        self.assertTrue(should_export_pdf(args))
 
     def test_validate_tracking_args_allows_disabled_tracking(self) -> None:
         args = tracking_args(track=False, company="", position="")

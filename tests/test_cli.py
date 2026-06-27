@@ -86,6 +86,41 @@ class CliTests(unittest.TestCase):
             self.assertTrue((output_dir / "cover_letter.html").exists())
             self.assertTrue((output_dir / "linkedin_message.html").exists())
 
+    def test_main_can_export_all_document_formats(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            result = run_command(
+                [
+                    "main.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                    "--export",
+                    "all",
+                ]
+            )
+
+            expected_files = [
+                "resume.html",
+                "cover_letter.html",
+                "linkedin_message.html",
+                "resume.docx",
+                "cover_letter.docx",
+                "linkedin_message.docx",
+                "resume.pdf",
+                "cover_letter.pdf",
+                "linkedin_message.pdf",
+            ]
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            for filename in expected_files:
+                path = output_dir / filename
+                with self.subTest(filename=filename):
+                    self.assertIn(str(path), result.stdout)
+                    self.assertTrue(path.exists())
+
     def test_main_can_generate_application_review_notes(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir) / "generated"
@@ -185,6 +220,12 @@ class CliTests(unittest.TestCase):
                 "resume.html",
                 "cover_letter.html",
                 "linkedin_message.html",
+                "resume.docx",
+                "cover_letter.docx",
+                "linkedin_message.docx",
+                "resume.pdf",
+                "cover_letter.pdf",
+                "linkedin_message.pdf",
             ]
 
             self.assertEqual(result.returncode, 0, result.stderr)

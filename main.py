@@ -9,6 +9,7 @@ from config import (
     ROLE_DISPLAY_NAMES,
     SAMPLE_JOB_PATH,
 )
+from document_exporter import export_docx_files, export_pdf_files
 from file_utils import read_text_file, write_text_file
 from generators import (
     generate_cover_letter,
@@ -54,7 +55,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help=(
             "Generate the full offline package: drafts, job text, review notes, "
-            "AI brief, and HTML copies."
+            "AI brief, manifest, and document exports."
         ),
     )
     parser.add_argument(
@@ -64,7 +65,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--export",
-        choices=["html"],
+        choices=["html", "docx", "pdf", "all"],
         help="Also export generated documents to the selected format.",
     )
     parser.add_argument(
@@ -140,7 +141,15 @@ def should_generate_ai_brief(args: argparse.Namespace) -> bool:
 
 
 def should_export_html(args: argparse.Namespace) -> bool:
-    return args.export == "html" or args.full_package
+    return args.export in ("html", "all") or args.full_package
+
+
+def should_export_docx(args: argparse.Namespace) -> bool:
+    return args.export in ("docx", "all") or args.full_package
+
+
+def should_export_pdf(args: argparse.Namespace) -> bool:
+    return args.export in ("pdf", "all") or args.full_package
 
 
 def should_generate_manifest(args: argparse.Namespace) -> bool:
@@ -243,6 +252,24 @@ def main() -> None:
         if should_export_html(args):
             generated_files.extend(
                 export_html_files(
+                    output_dir,
+                    resume,
+                    cover_letter,
+                    linkedin_message,
+                )
+            )
+        if should_export_docx(args):
+            generated_files.extend(
+                export_docx_files(
+                    output_dir,
+                    resume,
+                    cover_letter,
+                    linkedin_message,
+                )
+            )
+        if should_export_pdf(args):
+            generated_files.extend(
+                export_pdf_files(
                     output_dir,
                     resume,
                     cover_letter,

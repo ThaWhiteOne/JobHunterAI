@@ -11,7 +11,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Selects the matching candidate profile
 - Generates a tailored resume, cover letter, and LinkedIn message
 - Can generate a full offline application package with one command
-- Optionally exports generated documents to simple HTML files
+- Optionally exports generated documents to simple HTML, DOCX, and PDF files
 - Optionally creates review notes with matched keywords and a pre-apply checklist
 - Optionally prepares an offline AI brief for future tailoring
 - Optionally writes a JSON manifest for future automation handoff
@@ -68,6 +68,24 @@ Export browser-friendly HTML copies:
 python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --export html
 ```
 
+Export Word documents:
+
+```bash
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --export docx
+```
+
+Export PDF files:
+
+```bash
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --export pdf
+```
+
+Export all supported formats:
+
+```bash
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --export all
+```
+
 Create application review notes before sending:
 
 ```bash
@@ -112,7 +130,7 @@ By default, generated files are written to `outputs/`:
 - `outputs/cover_letter.md`
 - `outputs/linkedin_message.txt`
 
-When `--full-package` is used, JobHunterAI also writes the original job description, review notes, AI brief, and HTML copies.
+When `--full-package` is used, JobHunterAI also writes the original job description, review notes, AI brief, manifest, and HTML/DOCX/PDF copies.
 
 When `--save-job-text` is used, JobHunterAI also writes `job_description.txt` to the same output folder.
 
@@ -121,6 +139,20 @@ When `--export html` is used, JobHunterAI also writes:
 - `outputs/resume.html`
 - `outputs/cover_letter.html`
 - `outputs/linkedin_message.html`
+
+When `--export docx` is used, JobHunterAI also writes:
+
+- `outputs/resume.docx`
+- `outputs/cover_letter.docx`
+- `outputs/linkedin_message.docx`
+
+When `--export pdf` is used, JobHunterAI also writes:
+
+- `outputs/resume.pdf`
+- `outputs/cover_letter.pdf`
+- `outputs/linkedin_message.pdf`
+
+Use `--export all` to write HTML, DOCX, and PDF copies together.
 
 When `--review-notes` is used, JobHunterAI also writes `application_review.md` with detected role details, matched keywords, extracted requirement lines, and a checklist.
 
@@ -205,6 +237,7 @@ file_utils.py
 role_detector.py
 profile_selector.py
 generators.py
+document_exporter.py
 html_exporter.py
 job_analyzer.py
 manifest_builder.py
@@ -260,14 +293,14 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, job analysis, AI brief generation, manifest generation, Automation Unit checks/reports, profile fallback behavior, basic document generation, HTML export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, job analysis, AI brief generation, manifest generation, Automation Unit checks/reports, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 The full package command is also covered by the automated tests.
 
 ## Current Limitations
 
 - Uses simple keyword scoring instead of AI.
 - Reads one job description file per run.
-- Generates Markdown, text, and simple HTML files only.
+- DOCX/PDF exports are simple offline documents, not custom-designed templates.
 - AI brief generation is offline and does not call an API yet.
 - Manifest generation prepares automation handoff data but does not submit applications.
 - Automation Unit currently validates packages and writes reports only; it does not apply to jobs.
@@ -275,6 +308,6 @@ The full package command is also covered by the automated tests.
 
 ## Roadmap
 
-- Add DOCX/PDF export
+- Improve DOCX/PDF styling templates
 - Add optional AI mode later while keeping offline mode
 - Expand the Automation Unit after the offline workflow is reliable
