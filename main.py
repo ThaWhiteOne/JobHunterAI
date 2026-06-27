@@ -46,6 +46,11 @@ def parse_args() -> argparse.Namespace:
         help="Folder where generated files should be written.",
     )
     parser.add_argument(
+        "--save-job-text",
+        action="store_true",
+        help="Save the original job description beside the generated files.",
+    )
+    parser.add_argument(
         "--track",
         action="store_true",
         help="Save this generated application to the local job tracker.",
@@ -142,10 +147,20 @@ def main() -> None:
         resume_path = output_dir / "resume.md"
         cover_letter_path = output_dir / "cover_letter.md"
         linkedin_message_path = output_dir / "linkedin_message.txt"
+        generated_files = [
+            resume_path,
+            cover_letter_path,
+            linkedin_message_path,
+        ]
 
         write_text_file(resume_path, resume)
         write_text_file(cover_letter_path, cover_letter)
         write_text_file(linkedin_message_path, linkedin_message)
+        if args.save_job_text:
+            job_description_path = output_dir / "job_description.txt"
+            write_text_file(job_description_path, job_description)
+            generated_files.append(job_description_path)
+
         tracked_job_id = track_generated_application(args, role)
 
         print("JobHunterAI finished successfully.")
@@ -161,9 +176,8 @@ def main() -> None:
                     "Used master profile instead."
                 )
         print("Generated files:")
-        print(f"- {resume_path}")
-        print(f"- {cover_letter_path}")
-        print(f"- {linkedin_message_path}")
+        for generated_file in generated_files:
+            print(f"- {generated_file}")
         if tracked_job_id is not None:
             print(f"Tracked job: #{tracked_job_id}")
 

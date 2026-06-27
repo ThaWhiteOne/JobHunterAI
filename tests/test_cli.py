@@ -41,6 +41,28 @@ class CliTests(unittest.TestCase):
             self.assertTrue((output_dir / "cover_letter.md").exists())
             self.assertTrue((output_dir / "linkedin_message.txt").exists())
 
+    def test_main_can_save_original_job_description(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            result = run_command(
+                [
+                    "main.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                    "--save-job-text",
+                ]
+            )
+
+            job_description_path = output_dir / "job_description.txt"
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn(str(job_description_path), result.stdout)
+            self.assertTrue(job_description_path.exists())
+            self.assertIn("SQL", job_description_path.read_text(encoding="utf-8"))
+
     def test_tracker_cli_add_list_and_stats(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"

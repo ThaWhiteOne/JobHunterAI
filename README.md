@@ -44,6 +44,12 @@ Write generated files to a custom folder:
 python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer
 ```
 
+Save the original job description beside the generated files:
+
+```bash
+python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --save-job-text
+```
+
 Generate files and save the application in the tracker:
 
 ```bash
@@ -57,6 +63,8 @@ By default, generated files are written to `outputs/`:
 - `outputs/resume.md`
 - `outputs/cover_letter.md`
 - `outputs/linkedin_message.txt`
+
+When `--save-job-text` is used, JobHunterAI also writes `job_description.txt` to the same output folder.
 
 The `outputs/` folder is ignored by Git because the files are generated.
 
@@ -181,7 +189,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, profile fallback behavior, basic document generation, generator-to-tracker integration, job tracker database operations, and basic CLI commands.
+The tests cover role detection, profile fallback behavior, basic document generation, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 
 ## Current Limitations
 
