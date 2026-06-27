@@ -43,6 +43,35 @@ class TrackerDatabaseTests(unittest.TestCase):
 
             self.assertEqual(jobs[0]["status"], "applied")
 
+    def test_lists_jobs_by_status(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = Path(temp_dir) / "jobs.db"
+            add_job(
+                db_path,
+                company="Example Ltd",
+                position="Support Engineer",
+                status="saved",
+            )
+            add_job(
+                db_path,
+                company="Second Ltd",
+                position="Python Developer",
+                status="applied",
+            )
+
+            jobs = list_jobs(db_path, status_filter="applied")
+
+            self.assertEqual(len(jobs), 1)
+            self.assertEqual(jobs[0]["company"], "Second Ltd")
+            self.assertEqual(jobs[0]["status"], "applied")
+
+    def test_rejects_invalid_list_status_filter(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = Path(temp_dir) / "jobs.db"
+
+            with self.assertRaises(ValueError):
+                list_jobs(db_path, status_filter="waiting")
+
     def test_rejects_invalid_status(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"

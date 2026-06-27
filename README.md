@@ -74,6 +74,12 @@ List tracked jobs:
 python tracker.py list
 ```
 
+List tracked jobs by status:
+
+```bash
+python tracker.py list --status applied
+```
+
 Update a job status:
 
 ```bash

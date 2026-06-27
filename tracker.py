@@ -22,7 +22,13 @@ def parse_args() -> argparse.Namespace:
     )
     add_parser.add_argument("--notes", default="", help="Optional notes.")
 
-    subparsers.add_parser("list", help="List tracked jobs.")
+    list_parser = subparsers.add_parser("list", help="List tracked jobs.")
+    list_parser.add_argument(
+        "--status",
+        choices=VALID_STATUSES,
+        default="",
+        help="Only list jobs with this status.",
+    )
 
     update_parser = subparsers.add_parser("update", help="Update a job status.")
     update_parser.add_argument("--id", type=int, required=True, help="Job id.")
@@ -76,7 +82,7 @@ def main() -> None:
             return
 
         if args.command == "list":
-            print_jobs(list_jobs(JOB_TRACKER_DB_PATH))
+            print_jobs(list_jobs(JOB_TRACKER_DB_PATH, status_filter=args.status))
             return
 
         if args.command == "update":
