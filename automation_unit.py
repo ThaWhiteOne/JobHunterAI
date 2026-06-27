@@ -3,6 +3,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ai_reviewer import (
+    AIReviewNotConfiguredError,
+    ai_recruiter_review_path,
+    run_ai_review,
+)
 from draft_reviewer import build_recruiter_review_report, recruiter_review_path
 from file_utils import write_text_file
 
@@ -50,6 +55,11 @@ def parse_args() -> argparse.Namespace:
         "--write-report",
         action="store_true",
         help="Write recruiter_review.md beside the manifest.",
+    )
+    review_parser.add_argument(
+        "--ai-review",
+        action="store_true",
+        help="Optionally ask OpenAI to review drafts after the offline review.",
     )
 
     return parser.parse_args()
@@ -153,6 +163,12 @@ def write_recruiter_review(manifest_path: Path, report: str) -> Path:
     return report_path
 
 
+def write_ai_recruiter_review(manifest_path: Path, report: str) -> Path:
+    report_path = ai_recruiter_review_path(manifest_path)
+    write_text_file(report_path, report)
+    return report_path
+
+
 def run_check(manifest_path: Path) -> str:
     manifest = load_manifest(manifest_path)
     return build_check_report(manifest, manifest_path)
@@ -161,6 +177,11 @@ def run_check(manifest_path: Path) -> str:
 def run_review(manifest_path: Path) -> str:
     manifest = load_manifest(manifest_path)
     return build_recruiter_review_report(manifest, manifest_path)
+
+
+def run_optional_ai_review(manifest_path: Path, offline_report: str) -> str:
+    manifest = load_manifest(manifest_path)
+    return run_ai_review(manifest, manifest_path, offline_report)
 
 
 def main() -> None:
@@ -181,6 +202,22 @@ def main() -> None:
                 report_path = write_recruiter_review(args.manifest, report)
                 print("")
                 print(f"Recruiter review written: {report_path}")
+            if args.ai_review:
+                print("")
+                try:
+                    ai_report = run_optional_ai_review(args.manifest, report)
+                except AIReviewNotConfiguredError as error:
+                    print(f"AI review skipped: {error}")
+                    print("Offline recruiter review completed.")
+                else:
+                    print(ai_report)
+                    if args.write_report:
+                        ai_report_path = write_ai_recruiter_review(
+                            args.manifest,
+                            ai_report,
+                        )
+                        print("")
+                        print(f"AI recruiter review written: {ai_report_path}")
     except (FileNotFoundError, ValueError) as error:
         raise SystemExit(f"Automation Unit failed.\nError: {error}") from error
 

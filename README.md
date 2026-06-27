@@ -17,8 +17,9 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Optionally writes a JSON manifest for future automation handoff
 - Includes a safe Automation Unit checker for generated manifests
 - Includes an offline Recruiter Review Agent for draft quality checks
+- Optionally runs an AI recruiter review when explicitly requested
 - Tracks job applications with a local SQLite database
-- Works offline without OpenAI API calls or external services
+- Works offline by default without OpenAI API calls or external services
 
 ## Supported Roles
 
@@ -123,6 +124,12 @@ Review generated drafts like a recruiter:
 python automation_unit.py review outputs/example-ltd-support-engineer/application_manifest.json --write-report
 ```
 
+Optionally run an AI recruiter review after the offline review:
+
+```bash
+python automation_unit.py review outputs/example-ltd-support-engineer/application_manifest.json --write-report --ai-review
+```
+
 Generate files and save the application in the tracker:
 
 ```bash
@@ -171,6 +178,17 @@ When `--write-report` is used, the Automation Unit also writes `automation_repor
 
 `automation_unit.py review` reads the generated resume, cover letter, and LinkedIn message from the manifest, then writes recruiter-style feedback. It checks for placeholders, missing files, weak length signals, keyword alignment, and claims that need manual verification. It does not submit applications or call an AI API.
 
+`automation_unit.py review --ai-review` keeps the offline review first, then optionally calls OpenAI for a second recruiter-style review. If `OPENAI_API_KEY` is missing, the AI review is skipped and the offline review still completes.
+
+To enable optional AI review, create a local `.env` file:
+
+```text
+OPENAI_API_KEY=your_api_key_here
+OPENAI_MODEL=gpt-4.1
+```
+
+`.env` is ignored by Git. You can also set `OPENAI_API_KEY` and `OPENAI_MODEL` as environment variables instead.
+
 The `outputs/` folder is ignored by Git because the files are generated.
 
 ## Recommended Workflow
@@ -201,7 +219,13 @@ Then run the Recruiter Review Agent:
 python automation_unit.py review outputs/example-ltd-support-engineer/application_manifest.json --write-report
 ```
 
-After reviewing the generated drafts, `automation_report.md`, and `recruiter_review.md`, apply manually through the job site or recruiter message.
+Optional AI recruiter check:
+
+```bash
+python automation_unit.py review outputs/example-ltd-support-engineer/application_manifest.json --write-report --ai-review
+```
+
+After reviewing the generated drafts, `automation_report.md`, `recruiter_review.md`, and optional `ai_recruiter_review.md`, apply manually through the job site or recruiter message.
 
 ## Job Tracker
 
@@ -268,6 +292,7 @@ python tracker.py list
 main.py
 tracker.py
 automation_unit.py
+ai_reviewer.py
 ai_prompt_builder.py
 config.py
 file_utils.py
@@ -332,21 +357,22 @@ python -m unittest
 ```
 
 The tests cover role detection, job analysis, AI brief generation, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+AI reviewer tests use mocks and do not call the OpenAI API.
 The full package command is also covered by the automated tests.
 
 ## Current Limitations
 
-- Uses simple keyword scoring instead of AI.
+- Uses simple keyword scoring for role detection.
 - Reads one job description file per run.
 - DOCX/PDF exports are simple offline documents for the resume and cover letter, not custom-designed templates.
-- AI brief generation is offline and does not call an API yet.
+- AI brief generation is offline. Optional AI recruiter review only runs when requested with `--ai-review`.
 - Manifest generation prepares automation handoff data but does not submit applications.
 - Automation Unit currently validates packages and writes reports only; it does not apply to jobs.
-- Recruiter Review Agent is offline/rule-based for now; future AI mode can improve the review quality.
+- Recruiter Review Agent is offline/rule-based by default; optional AI mode can add a second review pass.
 - Job tracker is local-only and uses SQLite.
 
 ## Roadmap
 
 - Improve DOCX/PDF styling templates
-- Add optional AI mode later while keeping offline mode
-- Expand the Recruiter Review Agent with optional AI mode after the offline workflow is reliable
+- Refine optional AI review prompts with real application feedback
+- Add controlled job search/import flows without automatic submissions
