@@ -4,7 +4,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tracker_db import add_job, initialize_database, list_jobs, update_job_status
+from tracker_db import (
+    add_job,
+    get_job_stats,
+    initialize_database,
+    list_jobs,
+    update_job_status,
+)
 
 
 class TrackerDatabaseTests(unittest.TestCase):
@@ -129,6 +135,40 @@ class TrackerDatabaseTests(unittest.TestCase):
 
             with self.assertRaises(ValueError):
                 list_jobs(db_path, status_filter="waiting")
+
+    def test_get_job_stats_counts_jobs_by_status_and_role(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = Path(temp_dir) / "jobs.db"
+            add_job(
+                db_path,
+                company="Example Ltd",
+                position="Support Engineer",
+                role="support",
+                status="saved",
+            )
+            add_job(
+                db_path,
+                company="Second Ltd",
+                position="Python Developer",
+                role="developer",
+                status="applied",
+            )
+            add_job(
+                db_path,
+                company="Third Ltd",
+                position="Backend Developer",
+                role="developer",
+                status="applied",
+            )
+
+            stats = get_job_stats(db_path)
+
+            self.assertEqual(stats["total"], 3)
+            self.assertEqual(stats["by_status"]["saved"], 1)
+            self.assertEqual(stats["by_status"]["applied"], 2)
+            self.assertEqual(stats["by_status"]["interview"], 0)
+            self.assertEqual(stats["by_role"]["support"], 1)
+            self.assertEqual(stats["by_role"]["developer"], 2)
 
     def test_rejects_invalid_status(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

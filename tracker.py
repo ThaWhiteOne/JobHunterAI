@@ -1,7 +1,13 @@
 import argparse
 
 from config import JOB_TRACKER_DB_PATH
-from tracker_db import VALID_STATUSES, add_job, list_jobs, update_job_status
+from tracker_db import (
+    VALID_STATUSES,
+    add_job,
+    get_job_stats,
+    list_jobs,
+    update_job_status,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -34,6 +40,8 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Only list jobs with this role.",
     )
+
+    subparsers.add_parser("stats", help="Show job tracker summary counts.")
 
     update_parser = subparsers.add_parser("update", help="Update a job status.")
     update_parser.add_argument("--id", type=int, required=True, help="Job id.")
@@ -68,6 +76,21 @@ def print_jobs(jobs: list[dict[str, str | int]]) -> None:
         print(f"   Created: {job['created_at']}")
 
 
+def print_stats(stats: dict[str, int | dict[str, int]]) -> None:
+    print(f"Total jobs: {stats['total']}")
+
+    print("By status:")
+    for status, count in stats["by_status"].items():
+        print(f"- {status}: {count}")
+
+    print("By role:")
+    if not stats["by_role"]:
+        print("- none: 0")
+        return
+    for role, count in stats["by_role"].items():
+        print(f"- {role}: {count}")
+
+
 def main() -> None:
     args = parse_args()
 
@@ -94,6 +117,10 @@ def main() -> None:
                     role_filter=args.role,
                 )
             )
+            return
+
+        if args.command == "stats":
+            print_stats(get_job_stats(JOB_TRACKER_DB_PATH))
             return
 
         if args.command == "update":

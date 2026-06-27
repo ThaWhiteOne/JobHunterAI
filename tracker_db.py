@@ -139,6 +139,40 @@ def list_jobs(
     return [dict(row) for row in rows]
 
 
+def get_job_stats(db_path: Path) -> dict[str, int | dict[str, int]]:
+    initialize_database(db_path)
+
+    with closing(connect(db_path)) as connection:
+        total = connection.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
+        status_rows = connection.execute(
+            """
+            SELECT status, COUNT(*) AS count
+            FROM jobs
+            GROUP BY status
+            ORDER BY status
+            """
+        ).fetchall()
+        role_rows = connection.execute(
+            """
+            SELECT role, COUNT(*) AS count
+            FROM jobs
+            WHERE role IS NOT NULL AND TRIM(role) != ''
+            GROUP BY role
+            ORDER BY role
+            """
+        ).fetchall()
+
+    status_counts = {status: 0 for status in VALID_STATUSES}
+    status_counts.update({row["status"]: row["count"] for row in status_rows})
+    role_counts = {row["role"]: row["count"] for row in role_rows}
+
+    return {
+        "total": total,
+        "by_status": status_counts,
+        "by_role": role_counts,
+    }
+
+
 def update_job_status(db_path: Path, job_id: int, status: str) -> None:
     status = status.strip().lower()
     validate_status(status)

@@ -92,6 +92,12 @@ Combine filters:
 python tracker.py list --status applied --role developer
 ```
 
+Show tracker summary counts:
+
+```bash
+python tracker.py stats
+```
+
 Update a job status:
 
 ```bash
