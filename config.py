@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 
@@ -11,7 +12,9 @@ OUTPUTS_DIR = BASE_DIR / "outputs"
 SAMPLE_JOB_PATH = EXAMPLES_DIR / "sample_job.txt"
 MASTER_PROFILE_PATH = PROFILES_DIR / "master_profile.md"
 RESUME_TEMPLATE_PATH = TEMPLATES_DIR / "resume_template.md"
-JOB_TRACKER_DB_PATH = BASE_DIR / "job_tracker.db"
+JOB_TRACKER_DB_PATH = Path(
+    os.getenv("JOBHUNTERAI_DB_PATH", BASE_DIR / "job_tracker.db")
+)
 
 ROLE_PROFILE_MAP = {
     "support": PROFILES_DIR / "support_cv.md",

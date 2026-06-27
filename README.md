@@ -112,6 +112,13 @@ saved, generated, applied, interview, rejected, offer
 
 The tracker stores data in `job_tracker.db`, which is ignored by Git.
 
+Use a different tracker database:
+
+```bash
+set JOBHUNTERAI_DB_PATH=C:\path\to\jobs.db
+python tracker.py list
+```
+
 ## Project Structure
 
 ```text
@@ -174,7 +181,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, profile fallback behavior, basic document generation, generator-to-tracker integration, and job tracker database operations.
+The tests cover role detection, profile fallback behavior, basic document generation, generator-to-tracker integration, job tracker database operations, and basic CLI commands.
 
 ## Current Limitations
 

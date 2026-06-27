@@ -1,0 +1,81 @@
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def run_command(arguments: list[str], env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, *arguments],
+        cwd=BASE_DIR,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+class CliTests(unittest.TestCase):
+    def test_main_generates_files_with_custom_output_dir(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            result = run_command(
+                [
+                    "main.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                ]
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("JobHunterAI finished successfully.", result.stdout)
+            self.assertTrue((output_dir / "resume.md").exists())
+            self.assertTrue((output_dir / "cover_letter.md").exists())
+            self.assertTrue((output_dir / "linkedin_message.txt").exists())
+
+    def test_tracker_cli_add_list_and_stats(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = Path(temp_dir) / "jobs.db"
+            env = os.environ.copy()
+            env["JOBHUNTERAI_DB_PATH"] = str(db_path)
+
+            add_result = run_command(
+                [
+                    "tracker.py",
+                    "add",
+                    "--company",
+                    "Example Ltd",
+                    "--position",
+                    "Support Engineer",
+                    "--role",
+                    "support",
+                    "--status",
+                    "applied",
+                ],
+                env=env,
+            )
+            list_result = run_command(
+                ["tracker.py", "list", "--status", "applied", "--role", "support"],
+                env=env,
+            )
+            stats_result = run_command(["tracker.py", "stats"], env=env)
+
+            self.assertEqual(add_result.returncode, 0, add_result.stderr)
+            self.assertEqual(list_result.returncode, 0, list_result.stderr)
+            self.assertEqual(stats_result.returncode, 0, stats_result.stderr)
+            self.assertIn("Added job #1.", add_result.stdout)
+            self.assertIn("Example Ltd - Support Engineer [applied]", list_result.stdout)
+            self.assertIn("Total jobs: 1", stats_result.stdout)
+            self.assertIn("- applied: 1", stats_result.stdout)
+
+
+if __name__ == "__main__":
+    unittest.main()
