@@ -297,6 +297,7 @@ def match_actions_to_fields(
                 "target": target,
                 "status": match_status(action_item, field),
                 "field": field.searchable_text if field else "",
+                "field_details": field_summary(field) if field else {},
                 "note": "Inspection only. Do not fill or submit.",
             }
         )

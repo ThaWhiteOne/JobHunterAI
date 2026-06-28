@@ -41,6 +41,11 @@ def write_output_dir(path: Path, role: str = "support", apply_status: str = "Rea
         "# Page Inspection Report\n\nStatus: Ready for manual review\n",
         encoding="utf-8",
     )
+    (path / "page_action_plan.json").write_text("{}", encoding="utf-8")
+    (path / "page_action_plan.md").write_text(
+        "# Page Action Plan\n\nStatus: Ready for review\n",
+        encoding="utf-8",
+    )
     (path / "apply_readiness_report.md").write_text(
         f"# Apply Readiness Report\n\nStatus: {apply_status}\n",
         encoding="utf-8",
@@ -84,10 +89,15 @@ class StatusDashboardTests(unittest.TestCase):
                 summary.statuses["page_inspection"],
                 "Ready for manual review",
             )
+            self.assertEqual(
+                summary.statuses["page_action_plan"],
+                "Ready for review",
+            )
             self.assertTrue(summary.key_files["resume"])
             self.assertTrue(summary.key_files["browser_dry_run"])
             self.assertTrue(summary.key_files["browser_review_session"])
             self.assertTrue(summary.key_files["page_inspection"])
+            self.assertTrue(summary.key_files["page_action_plan"])
             self.assertEqual(summary.overall_status, "Ready")
 
     def test_summarize_output_dir_marks_not_ready_as_blocked(self) -> None:

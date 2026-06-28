@@ -14,6 +14,7 @@ STATUS_FILES = {
     "browser_dry_run": "browser_dry_run.md",
     "browser_review_session": "browser_review_session.md",
     "page_inspection": "page_inspection.md",
+    "page_action_plan": "page_action_plan.md",
     "apply_prep": "apply_prep_report.md",
     "batch": "batch_report.md",
     "batch_apply_prep": "batch_apply_prep_report.md",
@@ -99,6 +100,7 @@ def summarize_output_dir(output_dir: Path) -> OutputSummary:
         "browser_dry_run": (output_dir / "browser_dry_run.json").exists(),
         "browser_review_session": (output_dir / "browser_review_session.md").exists(),
         "page_inspection": (output_dir / "page_inspection.json").exists(),
+        "page_action_plan": (output_dir / "page_action_plan.json").exists(),
         "apply_session": (output_dir / "apply_session.md").exists(),
     }
     return OutputSummary(
