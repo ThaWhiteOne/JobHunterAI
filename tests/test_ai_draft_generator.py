@@ -26,6 +26,8 @@ class AIDraftGeneratorTests(unittest.TestCase):
         self.assertIn("Job asks for Python and APIs", prompt)
         self.assertIn("Resume template guidance", prompt)
         self.assertIn("Do not include unsupported dates", prompt)
+        self.assertIn("Do not imply paid or professional work", prompt)
+        self.assertIn("Use plain ASCII punctuation", prompt)
 
     def test_parse_ai_drafts_reads_required_json_keys(self) -> None:
         drafts = parse_ai_drafts(

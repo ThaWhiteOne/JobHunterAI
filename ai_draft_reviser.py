@@ -17,6 +17,8 @@ AI_REVISION_INSTRUCTIONS = (
     "Use only the supplied candidate profile as the source of truth. "
     "Do not invent experience, dates, employers, certifications, education, metrics, "
     "tools, or achievements. If a detail is missing, omit it. "
+    "Prefer concrete evidence from the profile over generic claims. "
+    "Use plain ASCII punctuation. "
     "Return only valid JSON with the requested keys."
 )
 
@@ -48,6 +50,9 @@ def build_ai_revision_prompt(
             "- Keep all claims supported by the candidate profile.",
             "- Remove or soften unsupported claims instead of asking the user to edit them.",
             "- Do not add dates, numbers, or achievements unless they appear in the profile.",
+            "- Do not imply paid or professional work unless the profile says it was paid or professional.",
+            "- Replace vague claims with specific profile-backed evidence where possible.",
+            "- Remove generic phrases like passionate, dynamic, proven track record, or fast-paced environment.",
             "- Keep the LinkedIn message short.",
             "- Use plain ASCII punctuation.",
             "",

@@ -77,6 +77,11 @@ def parse_args() -> argparse.Namespace:
         help="Write outputs/profile_validation_report.md.",
     )
     parser.add_argument(
+        "--write-guide",
+        action="store_true",
+        help="Write outputs/profile_improvement_guide.md.",
+    )
+    parser.add_argument(
         "--strict",
         action="store_true",
         help="Treat warnings as failures.",
@@ -286,8 +291,60 @@ def build_profile_validation_report(validation: ProfileValidation) -> str:
     return "\n".join(lines)
 
 
+def build_profile_improvement_guide(validation: ProfileValidation) -> str:
+    lines = [
+        "# Profile Improvement Guide",
+        "",
+        "Use this file as a one-time checklist before running the AI application pipeline.",
+        "Do not add anything unless it is truthful and profile-backed.",
+        "",
+        "## Highest Priority",
+        "",
+        "- Replace placeholder values such as `Later`, `TBD`, or bracketed notes.",
+        "- Add truthful dates for each role, project, course, or home lab where possible.",
+        "- Add a real LinkedIn URL or remove the LinkedIn line until it exists.",
+        "- Clarify whether community/server work was paid, volunteer, personal, or community-based.",
+        "- Add short project descriptions with scope, tools, and outcome only when true.",
+        "",
+        "## Suggested Profile Fields",
+        "",
+        "- Role/project name",
+        "- Dates or timeframe",
+        "- Context: paid, volunteer, learning, personal, community, or freelance",
+        "- Tools used",
+        "- Problems solved",
+        "- Evidence or outcome",
+        "- Keywords that match real skills",
+        "",
+        "## Safe Wording Examples",
+        "",
+        "- `Community project` instead of implying paid work when it was not paid.",
+        "- `Built a proof-of-concept` instead of implying production deployment.",
+        "- `Practiced in a home lab` instead of implying commercial SOC experience.",
+        "- `Worked with SQL databases` only where the profile explains the database context.",
+        "",
+        "## Current Validation Warnings",
+        "",
+        *issue_lines(validation.warnings),
+        "",
+        "## Current Validation Errors",
+        "",
+        *issue_lines(validation.errors),
+        "",
+        "## How AI Will Use This",
+        "",
+        "The AI draft and revision steps are instructed to use profile files as source of truth. "
+        "Better profile details should produce stronger drafts without per-application editing.",
+    ]
+    return "\n".join(lines)
+
+
 def report_path() -> Path:
     return OUTPUTS_DIR / "profile_validation_report.md"
+
+
+def improvement_guide_path() -> Path:
+    return OUTPUTS_DIR / "profile_improvement_guide.md"
 
 
 def main() -> None:
@@ -301,6 +358,11 @@ def main() -> None:
         write_text_file(path, report)
         print("")
         print(f"Profile validation report written: {path}")
+    if args.write_guide:
+        path = improvement_guide_path()
+        write_text_file(path, build_profile_improvement_guide(validation))
+        print("")
+        print(f"Profile improvement guide written: {path}")
 
     if validation.errors or (args.strict and validation.warnings):
         raise SystemExit(1)

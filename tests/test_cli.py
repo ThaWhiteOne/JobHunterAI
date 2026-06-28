@@ -404,6 +404,18 @@ class CliTests(unittest.TestCase):
             report_path.read_text(encoding="utf-8"),
         )
 
+    def test_profile_validator_cli_writes_improvement_guide(self) -> None:
+        result = run_command(["profile_validator.py", "--write-guide"])
+        guide_path = BASE_DIR / "outputs" / "profile_improvement_guide.md"
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(str(guide_path), result.stdout)
+        self.assertTrue(guide_path.exists())
+        self.assertIn(
+            "Profile Improvement Guide",
+            guide_path.read_text(encoding="utf-8"),
+        )
+
     def test_pipeline_cli_runs_offline_package_flow(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir) / "pipeline-output"

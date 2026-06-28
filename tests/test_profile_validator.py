@@ -3,7 +3,9 @@ import unittest
 from pathlib import Path
 
 from profile_validator import (
+    build_profile_improvement_guide,
     build_profile_validation_report,
+    improvement_guide_path,
     report_path,
     validate_profiles,
 )
@@ -151,8 +153,32 @@ class ProfileValidatorTests(unittest.TestCase):
             self.assertIn("Status: Blocked", report)
             self.assertIn("Required source file is missing", report)
 
+    def test_build_profile_improvement_guide_includes_safe_profile_advice(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            master_path = temp_path / "master_profile.md"
+            role_path = temp_path / "support_cv.md"
+            template_path = temp_path / "resume_template.md"
+            master_path.write_text(
+                VALID_MASTER_PROFILE.replace("2024", "Later"),
+                encoding="utf-8",
+            )
+            role_path.write_text(VALID_ROLE_PROFILE, encoding="utf-8")
+            template_path.write_text(VALID_TEMPLATE, encoding="utf-8")
+            validation = validate_profiles(master_path, [role_path], template_path)
+
+            guide = build_profile_improvement_guide(validation)
+
+            self.assertIn("Profile Improvement Guide", guide)
+            self.assertIn("Do not add anything unless it is truthful", guide)
+            self.assertIn("Community project", guide)
+            self.assertIn("Current Validation Warnings", guide)
+
     def test_report_path_uses_outputs_folder(self) -> None:
         self.assertEqual(report_path().name, "profile_validation_report.md")
+
+    def test_improvement_guide_path_uses_outputs_folder(self) -> None:
+        self.assertEqual(improvement_guide_path().name, "profile_improvement_guide.md")
 
 
 if __name__ == "__main__":

@@ -28,6 +28,8 @@ class AIDraftReviserTests(unittest.TestCase):
         self.assertIn("Job asks for SQL troubleshooting", prompt)
         self.assertIn("Resume draft", prompt)
         self.assertIn("Remove or soften unsupported claims", prompt)
+        self.assertIn("Do not imply paid or professional work", prompt)
+        self.assertIn("Remove generic phrases", prompt)
         self.assertIn("Use plain ASCII punctuation", prompt)
 
     def test_parse_ai_revision_reads_required_json_keys(self) -> None:

@@ -58,6 +58,12 @@ Check whether profile/template source files are ready for automation:
 python profile_validator.py --write-report
 ```
 
+Create a one-time profile cleanup guide:
+
+```bash
+python profile_validator.py --write-report --write-guide
+```
+
 Save a copied job description into the local job inbox:
 
 ```bash
@@ -236,6 +242,10 @@ When `--ai-auto-revise` is used, JobHunterAI sends the generated drafts through 
 
 `profile_validator.py` checks the master profile, role profiles, and resume template before automation. Missing files or required sections are errors. Placeholder-style text and missing dates are warnings so you can improve the source data once and reuse it safely.
 
+Use `profile_validator.py --write-guide` to create `outputs/profile_improvement_guide.md`, a checklist for adding truthful dates, project context, real links, and source-backed details without inventing experience.
+
+The AI draft and revision prompts explicitly tell the model to avoid generic filler, avoid implying paid work unless the profile says it was paid, use plain ASCII punctuation, and prefer specific evidence from the profile.
+
 `job_intake.py` saves copied job descriptions into the ignored `jobs/` folder and updates `jobs/job_index.json`. It does not scrape job boards or submit applications.
 
 `pipeline.py` runs profile validation, full package generation, the Automation Unit check, and recruiter review in order. It writes `pipeline_report.md` in the selected output folder. It does not submit applications.
@@ -307,6 +317,7 @@ Review these files before applying:
 - `application_review.md`
 - `ai_brief.md`
 - `ai_revision_notes.md` when `--ai-auto-revise` is used
+- `profile_improvement_guide.md` when `--write-guide` is used
 - `pipeline_report.md` when `pipeline.py` is used
 - `batch_report.md` when `batch_pipeline.py` is used
 
@@ -465,7 +476,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, job intake, profile validation, single-job and batch pipeline orchestration, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, job intake, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 AI draft/revision/reviewer tests use mocks and do not call the OpenAI API.
 The full package command is also covered by the automated tests.
 
@@ -475,6 +486,7 @@ The full package command is also covered by the automated tests.
 - `main.py` and `pipeline.py` read one job description per run; `batch_pipeline.py` handles a folder of saved `.txt` job descriptions.
 - Job intake currently saves manually copied job descriptions; automated search/import is still future work.
 - Profile validation warns about missing dates, but the user still needs to add truthful dates to profile files.
+- The profile improvement guide suggests what to add, but it does not edit profile facts automatically.
 - DOCX/PDF exports are simple offline documents for the resume and cover letter, not custom-designed templates.
 - AI brief generation is offline. Optional AI draft generation, automatic revision, and recruiter review only run when requested.
 - Manifest generation prepares automation handoff data but does not submit applications.

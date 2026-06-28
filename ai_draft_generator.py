@@ -16,6 +16,8 @@ AI_DRAFT_INSTRUCTIONS = (
     "Use only the candidate profile and template guidance provided by the user. "
     "Do not invent experience, dates, employers, certifications, education, metrics, "
     "or tools. If a detail is missing, omit it instead of guessing. "
+    "Prefer concrete evidence from the profile over generic claims. "
+    "Use plain ASCII punctuation. "
     "Return only valid JSON with the requested keys."
 )
 
@@ -48,6 +50,10 @@ def build_ai_draft_prompt(
             "- Keep the resume ATS-friendly Markdown.",
             "- Tailor naturally to the job description.",
             "- Do not include unsupported dates, metrics, employers, certifications, or education.",
+            "- Do not imply paid or professional work unless the profile says it was paid or professional.",
+            "- Use specific profile evidence before broad statements.",
+            "- Avoid generic phrases like passionate, dynamic, proven track record, or fast-paced environment.",
+            "- Use plain ASCII punctuation.",
             "- Keep the LinkedIn message short and recruiter-friendly.",
             "",
             "## Target Role",
