@@ -175,6 +175,14 @@ def build_pipeline_steps(args: argparse.Namespace) -> list[tuple[str, list[str]]
                 "--write",
             ],
         ),
+        (
+            "Submission plan",
+            [
+                "submission_planner.py",
+                str(args.output_dir),
+                "--write",
+            ],
+        ),
     ]
 
 
@@ -219,6 +227,7 @@ def build_pipeline_report(steps: list[PipelineStep], output_dir: Path) -> str:
             f"- {output_dir / 'recruiter_review.md'}",
             f"- {output_dir / 'ready_to_apply_report.md'}",
             f"- {output_dir / 'application_packet.json'}",
+            f"- {output_dir / 'submission_plan.md'}",
             f"- {output_dir / 'ai_recruiter_review.md'} (only when --ai-review is used and configured)",
         ]
     )
