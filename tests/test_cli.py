@@ -473,6 +473,37 @@ class CliTests(unittest.TestCase):
             self.assertIn("does not fill forms", apply_result.stdout)
             self.assertTrue(apply_session_path.exists())
 
+    def test_form_fill_planner_cli_writes_json_and_markdown_plans(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            generate_result = run_command(
+                [
+                    "pipeline.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                ]
+            )
+            plan_result = run_command(
+                [
+                    "form_fill_planner.py",
+                    str(output_dir),
+                    "--write",
+                ]
+            )
+            json_path = output_dir / "form_fill_plan.json"
+            markdown_path = output_dir / "form_fill_plan.md"
+
+            self.assertEqual(generate_result.returncode, 0, generate_result.stderr)
+            self.assertEqual(plan_result.returncode, 0, plan_result.stderr)
+            self.assertIn("Form Fill Plan", plan_result.stdout)
+            self.assertTrue(json_path.exists())
+            self.assertTrue(markdown_path.exists())
+            plan = json.loads(json_path.read_text(encoding="utf-8"))
+            self.assertFalse(plan["submission_allowed"])
+
     def test_tracker_cli_add_list_and_stats(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"
