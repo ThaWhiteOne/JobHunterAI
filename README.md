@@ -14,6 +14,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Optionally uses AI to generate stronger tailored drafts from the selected profile
 - Optionally uses AI to automatically revise drafts before files are written
 - Validates profile and template source files before automation
+- Saves copied job descriptions into a local job inbox
 - Runs the safe generation/check/review workflow with one pipeline command
 - Runs the safe pipeline for multiple job description files in a batch
 - Optionally exports generated documents to simple HTML, DOCX, and PDF files
@@ -55,6 +56,18 @@ Check whether profile/template source files are ready for automation:
 
 ```bash
 python profile_validator.py --write-report
+```
+
+Save a copied job description into the local job inbox:
+
+```bash
+python job_intake.py add --company "Example Ltd" --position "Support Engineer" --url "https://example.com/job" --text "Paste the job description here"
+```
+
+List saved job descriptions:
+
+```bash
+python job_intake.py list
 ```
 
 Run the offline package pipeline with one command:
@@ -223,6 +236,8 @@ When `--ai-auto-revise` is used, JobHunterAI sends the generated drafts through 
 
 `profile_validator.py` checks the master profile, role profiles, and resume template before automation. Missing files or required sections are errors. Placeholder-style text and missing dates are warnings so you can improve the source data once and reuse it safely.
 
+`job_intake.py` saves copied job descriptions into the ignored `jobs/` folder and updates `jobs/job_index.json`. It does not scrape job boards or submit applications.
+
 `pipeline.py` runs profile validation, full package generation, the Automation Unit check, and recruiter review in order. It writes `pipeline_report.md` in the selected output folder. It does not submit applications.
 
 `batch_pipeline.py` runs `pipeline.py` for every `.txt` job description in a folder. It creates one output folder per job and writes `batch_report.md` in the batch output root. It continues after failed jobs by default, or stops early with `--stop-on-error`.
@@ -280,6 +295,7 @@ python pipeline.py --job examples/sample_job.txt --output-dir outputs/example-lt
 For multiple saved job descriptions:
 
 ```bash
+python job_intake.py add --company "Example Ltd" --position "Support Engineer" --text "Paste the job description here"
 python batch_pipeline.py --jobs-dir jobs --output-root outputs/batch --ai
 ```
 
@@ -380,6 +396,7 @@ main.py
 tracker.py
 automation_unit.py
 profile_validator.py
+job_intake.py
 pipeline.py
 batch_pipeline.py
 ai_draft_generator.py
@@ -448,7 +465,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, profile validation, single-job and batch pipeline orchestration, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, job intake, profile validation, single-job and batch pipeline orchestration, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 AI draft/revision/reviewer tests use mocks and do not call the OpenAI API.
 The full package command is also covered by the automated tests.
 
@@ -456,6 +473,7 @@ The full package command is also covered by the automated tests.
 
 - Uses simple keyword scoring for role detection.
 - `main.py` and `pipeline.py` read one job description per run; `batch_pipeline.py` handles a folder of saved `.txt` job descriptions.
+- Job intake currently saves manually copied job descriptions; automated search/import is still future work.
 - Profile validation warns about missing dates, but the user still needs to add truthful dates to profile files.
 - DOCX/PDF exports are simple offline documents for the resume and cover letter, not custom-designed templates.
 - AI brief generation is offline. Optional AI draft generation, automatic revision, and recruiter review only run when requested.

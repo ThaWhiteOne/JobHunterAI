@@ -460,6 +460,79 @@ class CliTests(unittest.TestCase):
             self.assertTrue((output_root / "developer-job" / "pipeline_report.md").exists())
             self.assertTrue((output_root / "batch_report.md").exists())
 
+    def test_job_intake_cli_saves_and_lists_job(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            jobs_dir = Path(temp_dir) / "jobs"
+
+            add_result = run_command(
+                [
+                    "job_intake.py",
+                    "add",
+                    "--jobs-dir",
+                    str(jobs_dir),
+                    "--company",
+                    "Example Ltd",
+                    "--position",
+                    "Support Engineer",
+                    "--url",
+                    "https://example.com/job",
+                    "--text",
+                    "Technical Support Engineer, SQL, troubleshooting",
+                ]
+            )
+            list_result = run_command(
+                [
+                    "job_intake.py",
+                    "list",
+                    "--jobs-dir",
+                    str(jobs_dir),
+                ]
+            )
+
+            self.assertEqual(add_result.returncode, 0, add_result.stderr)
+            self.assertEqual(list_result.returncode, 0, list_result.stderr)
+            self.assertIn("Saved job description.", add_result.stdout)
+            self.assertTrue((jobs_dir / "example-ltd-support-engineer.txt").exists())
+            self.assertTrue((jobs_dir / "job_index.json").exists())
+            self.assertIn("Example Ltd - Support Engineer", list_result.stdout)
+
+    def test_intake_saved_job_can_feed_batch_pipeline(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            jobs_dir = temp_path / "jobs"
+            output_root = temp_path / "batch-output"
+
+            add_result = run_command(
+                [
+                    "job_intake.py",
+                    "add",
+                    "--jobs-dir",
+                    str(jobs_dir),
+                    "--company",
+                    "Example Ltd",
+                    "--position",
+                    "Support Engineer",
+                    "--text",
+                    "Technical Support Engineer, SQL, troubleshooting, customer support",
+                ]
+            )
+            batch_result = run_command(
+                [
+                    "batch_pipeline.py",
+                    "--jobs-dir",
+                    str(jobs_dir),
+                    "--output-root",
+                    str(output_root),
+                ]
+            )
+
+            self.assertEqual(add_result.returncode, 0, add_result.stderr)
+            self.assertEqual(batch_result.returncode, 0, batch_result.stderr)
+            self.assertIn("example-ltd-support-engineer.txt: OK", batch_result.stdout)
+            self.assertTrue(
+                (output_root / "example-ltd-support-engineer" / "pipeline_report.md").exists()
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
