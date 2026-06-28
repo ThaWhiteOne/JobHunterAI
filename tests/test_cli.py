@@ -504,6 +504,52 @@ class CliTests(unittest.TestCase):
             plan = json.loads(json_path.read_text(encoding="utf-8"))
             self.assertFalse(plan["submission_allowed"])
 
+    def test_apply_readiness_gate_cli_writes_report(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_dir = temp_path / "generated"
+            answers_path = temp_path / "application_answers.md"
+            answers_path.write_text(
+                "Work authorization:\nEligible to work in Bulgaria\n\n"
+                "Visa sponsorship:\nNo sponsorship required\n\n"
+                "Notice period / start date:\nAvailable after two weeks notice\n\n"
+                "Salary expectation:\nOpen to market range\n",
+                encoding="utf-8",
+            )
+
+            generate_result = run_command(
+                [
+                    "pipeline.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                ]
+            )
+            form_plan_result = run_command(
+                [
+                    "form_fill_planner.py",
+                    str(output_dir),
+                    "--answers",
+                    str(answers_path),
+                    "--write",
+                ]
+            )
+            readiness_result = run_command(
+                [
+                    "apply_readiness_gate.py",
+                    str(output_dir),
+                    "--write-report",
+                ]
+            )
+            report_path = output_dir / "apply_readiness_report.md"
+
+            self.assertEqual(generate_result.returncode, 0, generate_result.stderr)
+            self.assertEqual(form_plan_result.returncode, 0, form_plan_result.stderr)
+            self.assertEqual(readiness_result.returncode, 0, readiness_result.stderr)
+            self.assertIn("Apply Readiness Report", readiness_result.stdout)
+            self.assertTrue(report_path.exists())
+
     def test_tracker_cli_add_list_and_stats(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"
