@@ -626,6 +626,33 @@ class CliTests(unittest.TestCase):
             self.assertTrue((output_root / "developer-job" / "apply_prep_report.md").exists())
             self.assertTrue((output_root / "batch_apply_prep_report.md").exists())
 
+    def test_status_dashboard_cli_writes_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            generate_result = run_command(
+                [
+                    "pipeline.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                ]
+            )
+            dashboard_result = run_command(
+                [
+                    "status_dashboard.py",
+                    str(output_dir),
+                    "--write",
+                ]
+            )
+            dashboard_file = output_dir / "status_dashboard.md"
+
+            self.assertEqual(generate_result.returncode, 0, generate_result.stderr)
+            self.assertEqual(dashboard_result.returncode, 0, dashboard_result.stderr)
+            self.assertIn("JobHunterAI Status Dashboard", dashboard_result.stdout)
+            self.assertTrue(dashboard_file.exists())
+
     def test_tracker_cli_add_list_and_stats(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"
