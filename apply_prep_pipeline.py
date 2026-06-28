@@ -102,6 +102,14 @@ def build_apply_assistant_command(args: argparse.Namespace) -> list[str]:
     return command
 
 
+def build_browser_dry_run_command(args: argparse.Namespace) -> list[str]:
+    return [
+        "browser_dry_run.py",
+        str(args.output_dir),
+        "--write",
+    ]
+
+
 def build_apply_prep_steps(args: argparse.Namespace) -> list[tuple[str, list[str]]]:
     return [
         ("Application package pipeline", build_package_command(args)),
@@ -114,6 +122,7 @@ def build_apply_prep_steps(args: argparse.Namespace) -> list[tuple[str, list[str
                 "--write-report",
             ],
         ),
+        ("Browser automation dry run", build_browser_dry_run_command(args)),
         ("Controlled apply session", build_apply_assistant_command(args)),
     ]
 
@@ -141,6 +150,8 @@ def build_apply_prep_report(steps: list[PipelineStep], output_dir: Path) -> str:
             f"- {output_dir / 'form_fill_plan.json'}",
             f"- {output_dir / 'form_fill_plan.md'}",
             f"- {output_dir / 'apply_readiness_report.md'}",
+            f"- {output_dir / 'browser_dry_run.json'}",
+            f"- {output_dir / 'browser_dry_run.md'}",
             f"- {output_dir / 'apply_session.md'} (only when readiness passes)",
         ]
     )

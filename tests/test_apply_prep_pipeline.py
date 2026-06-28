@@ -7,6 +7,7 @@ from unittest.mock import patch
 from apply_prep_pipeline import (
     apply_prep_report_path,
     build_apply_assistant_command,
+    build_browser_dry_run_command,
     build_apply_prep_report,
     build_apply_prep_steps,
     build_form_fill_command,
@@ -57,6 +58,12 @@ class ApplyPrepPipelineTests(unittest.TestCase):
         self.assertIn("apply_assistant.py", command)
         self.assertIn("--open-browser", command)
 
+    def test_build_browser_dry_run_command_writes_report(self) -> None:
+        command = build_browser_dry_run_command(make_args())
+
+        self.assertIn("browser_dry_run.py", command)
+        self.assertIn("--write", command)
+
     def test_build_apply_prep_steps_runs_gate_before_apply_session(self) -> None:
         steps = build_apply_prep_steps(make_args())
         names = [name for name, _command in steps]
@@ -67,6 +74,7 @@ class ApplyPrepPipelineTests(unittest.TestCase):
                 "Application package pipeline",
                 "Form-fill plan",
                 "Apply readiness gate",
+                "Browser automation dry run",
                 "Controlled apply session",
             ],
         )
@@ -77,6 +85,7 @@ class ApplyPrepPipelineTests(unittest.TestCase):
             PipelineStep("Application package pipeline", ["python"], 0, "", ""),
             PipelineStep("Form-fill plan", ["python"], 0, "", ""),
             PipelineStep("Apply readiness gate", ["python"], 1, "", "not ready"),
+            PipelineStep("Browser automation dry run", ["python"], 0, "", ""),
             PipelineStep("Controlled apply session", ["python"], 0, "", ""),
         ]
 
@@ -95,6 +104,7 @@ class ApplyPrepPipelineTests(unittest.TestCase):
 
         self.assertIn("Apply Prep Pipeline Report", report)
         self.assertIn("apply_readiness_report.md", report)
+        self.assertIn("browser_dry_run.md", report)
         self.assertIn("It does not fill forms", report)
 
     def test_apply_prep_report_path_lives_in_output_dir(self) -> None:

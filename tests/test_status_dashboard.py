@@ -27,6 +27,11 @@ def write_output_dir(path: Path, role: str = "support", apply_status: str = "Rea
     (path / "cover_letter.md").write_text("Cover", encoding="utf-8")
     (path / "linkedin_message.txt").write_text("Message", encoding="utf-8")
     (path / "application_packet.json").write_text("{}", encoding="utf-8")
+    (path / "browser_dry_run.json").write_text("{}", encoding="utf-8")
+    (path / "browser_dry_run.md").write_text(
+        "# Browser Automation Dry Run\n\nStatus: Ready\n",
+        encoding="utf-8",
+    )
     (path / "apply_readiness_report.md").write_text(
         f"# Apply Readiness Report\n\nStatus: {apply_status}\n",
         encoding="utf-8",
@@ -61,7 +66,9 @@ class StatusDashboardTests(unittest.TestCase):
 
             self.assertEqual(summary.detected_role, "support")
             self.assertEqual(summary.statuses["apply_readiness"], "Ready")
+            self.assertEqual(summary.statuses["browser_dry_run"], "Ready")
             self.assertTrue(summary.key_files["resume"])
+            self.assertTrue(summary.key_files["browser_dry_run"])
             self.assertEqual(summary.overall_status, "Ready")
 
     def test_summarize_output_dir_marks_not_ready_as_blocked(self) -> None:

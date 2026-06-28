@@ -550,6 +550,56 @@ class CliTests(unittest.TestCase):
             self.assertIn("Apply Readiness Report", readiness_result.stdout)
             self.assertTrue(report_path.exists())
 
+    def test_browser_dry_run_cli_writes_json_and_markdown_reports(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_dir = temp_path / "generated"
+            answers_path = temp_path / "application_answers.md"
+            answers_path.write_text(
+                "Work authorization:\nEligible to work in Bulgaria\n\n"
+                "Visa sponsorship:\nNo sponsorship required\n\n"
+                "Notice period / start date:\nAvailable after two weeks notice\n\n"
+                "Salary expectation:\nOpen to market range\n",
+                encoding="utf-8",
+            )
+
+            generate_result = run_command(
+                [
+                    "pipeline.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                ]
+            )
+            form_plan_result = run_command(
+                [
+                    "form_fill_planner.py",
+                    str(output_dir),
+                    "--answers",
+                    str(answers_path),
+                    "--write",
+                ]
+            )
+            dry_run_result = run_command(
+                [
+                    "browser_dry_run.py",
+                    str(output_dir),
+                    "--write",
+                ]
+            )
+            json_path = output_dir / "browser_dry_run.json"
+            markdown_path = output_dir / "browser_dry_run.md"
+
+            self.assertEqual(generate_result.returncode, 0, generate_result.stderr)
+            self.assertEqual(form_plan_result.returncode, 0, form_plan_result.stderr)
+            self.assertEqual(dry_run_result.returncode, 0, dry_run_result.stderr)
+            self.assertIn("Browser Automation Dry Run", dry_run_result.stdout)
+            self.assertTrue(json_path.exists())
+            self.assertTrue(markdown_path.exists())
+            dry_run = json.loads(json_path.read_text(encoding="utf-8"))
+            self.assertFalse(dry_run["submission_allowed"])
+
     def test_apply_prep_pipeline_cli_runs_safe_apply_prep_flow(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -579,9 +629,11 @@ class CliTests(unittest.TestCase):
             self.assertIn("Application package pipeline: OK", result.stdout)
             self.assertIn("Form-fill plan: OK", result.stdout)
             self.assertIn("Apply readiness gate: OK", result.stdout)
+            self.assertIn("Browser automation dry run: OK", result.stdout)
             self.assertIn("Controlled apply session: OK", result.stdout)
             self.assertTrue((output_dir / "apply_prep_report.md").exists())
             self.assertTrue((output_dir / "apply_readiness_report.md").exists())
+            self.assertTrue((output_dir / "browser_dry_run.md").exists())
             self.assertTrue((output_dir / "apply_session.md").exists())
 
     def test_batch_apply_prep_pipeline_cli_runs_multiple_jobs(self) -> None:

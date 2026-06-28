@@ -11,6 +11,7 @@ STATUS_FILES = {
     "pipeline": "pipeline_report.md",
     "readiness": "ready_to_apply_report.md",
     "apply_readiness": "apply_readiness_report.md",
+    "browser_dry_run": "browser_dry_run.md",
     "apply_prep": "apply_prep_report.md",
     "batch": "batch_report.md",
     "batch_apply_prep": "batch_apply_prep_report.md",
@@ -88,6 +89,7 @@ def summarize_output_dir(output_dir: Path) -> OutputSummary:
         "linkedin_message": (output_dir / "linkedin_message.txt").exists(),
         "application_packet": (output_dir / "application_packet.json").exists(),
         "form_fill_plan": (output_dir / "form_fill_plan.json").exists(),
+        "browser_dry_run": (output_dir / "browser_dry_run.json").exists(),
         "apply_session": (output_dir / "apply_session.md").exists(),
     }
     return OutputSummary(
