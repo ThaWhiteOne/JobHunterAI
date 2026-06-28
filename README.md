@@ -43,6 +43,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Optionally runs an AI recruiter review when explicitly requested
 - Tracks job applications with a local SQLite database
 - Imports a public job posting URL into the local job inbox
+- Imports multiple public job posting URLs from a local URL list
 - Works offline by default without OpenAI API calls or external services
 
 ## Supported Roles
@@ -117,6 +118,14 @@ If the page does not expose clear job metadata, provide overrides:
 ```bash
 python job_url_importer.py "https://example.com/job-posting" --company "Example Ltd" --position "Junior Python Developer"
 ```
+
+Import multiple public job posting URLs from a local file:
+
+```bash
+python batch_job_url_importer.py --urls-file jobs/job_urls.txt --write-report
+```
+
+The URL file should contain one URL per line. Blank lines and lines starting with `#` are ignored.
 
 Run the offline package pipeline with one command:
 
@@ -400,6 +409,8 @@ The AI draft and revision prompts explicitly tell the model to avoid generic fil
 `job_intake.py` saves copied job descriptions into the ignored `jobs/` folder and updates `jobs/job_index.json`. It does not scrape job boards or submit applications.
 
 `job_url_importer.py` fetches a provided public job posting URL, extracts job title, company, and description from JobPosting JSON-LD or visible HTML fallback text, then saves it into the ignored `jobs/` folder through the same local intake flow. It does not search job boards, bypass logins, fill forms, or submit applications.
+
+`batch_job_url_importer.py` reads one public job posting URL per line from a local text file, imports each URL through `job_url_importer.py`, detects the likely role from the imported description, and can write `jobs/url_import_report.md`. It continues after failed URLs by default. It does not search job boards, bypass logins, fill forms, or submit applications.
 
 `pipeline.py` runs profile validation, full package generation, the Automation Unit check, recruiter review, readiness check, application packet builder, and submission planner in order. It writes `pipeline_report.md` in the selected output folder. It does not submit applications.
 
@@ -697,6 +708,7 @@ automation_unit.py
 profile_validator.py
 job_intake.py
 job_url_importer.py
+batch_job_url_importer.py
 pipeline.py
 batch_pipeline.py
 batch_apply_prep_pipeline.py
@@ -781,7 +793,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, desktop UI command wiring, desktop output-monitor snapshots, job intake, public job URL import parsing, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, safe apply-prep orchestration, batch apply-prep orchestration, status dashboard summaries, readiness checking, application packet generation, submission planning, controlled apply session setup, safe form-fill planning, apply readiness gating, browser dry-run action planning, browser review sessions, page inspection, page action planning and gating, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, desktop UI command wiring, desktop output-monitor snapshots, job intake, public job URL import parsing, batch URL import reporting, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, safe apply-prep orchestration, batch apply-prep orchestration, status dashboard summaries, readiness checking, application packet generation, submission planning, controlled apply session setup, safe form-fill planning, apply readiness gating, browser dry-run action planning, browser review sessions, page inspection, page action planning and gating, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 AI draft/revision/reviewer tests use mocks and do not call the OpenAI API.
 The full package command is also covered by the automated tests.
 
