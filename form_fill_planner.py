@@ -80,7 +80,7 @@ def parse_labeled_fields(text: str, labels: dict[str, str]) -> dict[str, str]:
     fields = {}
     index = 0
     while index < len(lines):
-        line = lines[index].strip()
+        line = lines[index].strip().lstrip("\ufeff")
         matched_label = None
         for label in labels:
             if line.lower().startswith(f"{label.lower()}:"):

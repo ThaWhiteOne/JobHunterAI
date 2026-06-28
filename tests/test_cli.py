@@ -550,6 +550,40 @@ class CliTests(unittest.TestCase):
             self.assertIn("Apply Readiness Report", readiness_result.stdout)
             self.assertTrue(report_path.exists())
 
+    def test_apply_prep_pipeline_cli_runs_safe_apply_prep_flow(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            output_dir = temp_path / "apply-prep-output"
+            answers_path = temp_path / "application_answers.md"
+            answers_path.write_text(
+                "Work authorization:\nEligible to work in Bulgaria\n\n"
+                "Visa sponsorship:\nNo sponsorship required\n\n"
+                "Notice period / start date:\nAvailable after two weeks notice\n\n"
+                "Salary expectation:\nOpen to market range\n",
+                encoding="utf-8",
+            )
+
+            result = run_command(
+                [
+                    "apply_prep_pipeline.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                    "--answers",
+                    str(answers_path),
+                ]
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Application package pipeline: OK", result.stdout)
+            self.assertIn("Form-fill plan: OK", result.stdout)
+            self.assertIn("Apply readiness gate: OK", result.stdout)
+            self.assertIn("Controlled apply session: OK", result.stdout)
+            self.assertTrue((output_dir / "apply_prep_report.md").exists())
+            self.assertTrue((output_dir / "apply_readiness_report.md").exists())
+            self.assertTrue((output_dir / "apply_session.md").exists())
+
     def test_tracker_cli_add_list_and_stats(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"

@@ -79,6 +79,11 @@ class FormFillPlannerTests(unittest.TestCase):
         self.assertEqual(answers["start_date"], "Available after two weeks notice")
         self.assertEqual(answers["salary_expectation"], "Open to market range")
 
+    def test_parse_application_answers_handles_utf8_bom(self) -> None:
+        answers = parse_application_answers("\ufeff" + SAMPLE_ANSWERS)
+
+        self.assertEqual(answers["work_authorization"], "Eligible to work in Bulgaria")
+
     def test_select_document_prefers_first_available_choice(self) -> None:
         document = select_document(
             {

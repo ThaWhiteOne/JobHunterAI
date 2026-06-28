@@ -24,6 +24,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Creates a safe form-fill plan for future browser automation
 - Reuses local application answers from an ignored profile file when available
 - Checks whether the form-fill plan is ready for future browser automation
+- Runs the full safe apply-prep workflow with one command
 - Optionally exports generated documents to simple HTML, DOCX, and PDF files
 - Optionally creates review notes with matched keywords and a pre-apply checklist
 - Optionally prepares an offline AI brief for future tailoring
@@ -93,6 +94,12 @@ Run the AI draft pipeline with automatic revision:
 
 ```bash
 python pipeline.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --ai
+```
+
+Run the full safe apply-prep workflow:
+
+```bash
+python apply_prep_pipeline.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --answers profiles/application_answers.md
 ```
 
 Run the pipeline for every `.txt` job description in a folder:
@@ -320,6 +327,8 @@ The AI draft and revision prompts explicitly tell the model to avoid generic fil
 
 `apply_readiness_gate.py` reads `form_fill_plan.json` and writes `apply_readiness_report.md`. It blocks future automation when required contact fields, documents, or reusable application answers are missing. It does not fill forms or submit applications.
 
+`apply_prep_pipeline.py` runs the safe chain in order: package pipeline, form-fill plan, apply readiness gate, then controlled apply session only when the gate passes. It writes `apply_prep_report.md`. It does not fill forms or submit applications.
+
 `batch_pipeline.py` runs `pipeline.py` for every `.txt` job description in a folder. It creates one output folder per job and writes `batch_report.md` in the batch output root. It continues after failed jobs by default, or stops early with `--stop-on-error`.
 
 The local `jobs/` folder is ignored by Git so real job descriptions are not committed.
@@ -372,6 +381,12 @@ Or run the same safe package flow through the pipeline:
 python pipeline.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --ai
 ```
 
+Or run the full safe apply-prep workflow:
+
+```bash
+python apply_prep_pipeline.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --answers profiles/application_answers.md
+```
+
 For multiple saved job descriptions:
 
 ```bash
@@ -394,6 +409,7 @@ Review these files before applying:
 - `apply_session.md` when `apply_assistant.py --write` is used
 - `form_fill_plan.json` and `form_fill_plan.md` when `form_fill_planner.py --write` is used
 - `apply_readiness_report.md` when `apply_readiness_gate.py --write-report` is used
+- `apply_prep_report.md` when `apply_prep_pipeline.py` is used
 - `pipeline_report.md` when `pipeline.py` is used
 - `batch_report.md` when `batch_pipeline.py` is used
 
@@ -534,6 +550,7 @@ submission_planner.py
 apply_assistant.py
 form_fill_planner.py
 apply_readiness_gate.py
+apply_prep_pipeline.py
 ai_draft_generator.py
 ai_draft_reviser.py
 ai_reviewer.py
@@ -601,7 +618,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, job intake, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, readiness checking, application packet generation, submission planning, controlled apply session setup, safe form-fill planning, apply readiness gating, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, job intake, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, safe apply-prep orchestration, readiness checking, application packet generation, submission planning, controlled apply session setup, safe form-fill planning, apply readiness gating, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 AI draft/revision/reviewer tests use mocks and do not call the OpenAI API.
 The full package command is also covered by the automated tests.
 
@@ -616,7 +633,7 @@ The full package command is also covered by the automated tests.
 - DOCX/PDF exports are simple offline documents for the resume and cover letter, not custom-designed templates.
 - AI brief generation is offline. Optional AI draft generation, automatic revision, and recruiter review only run when requested.
 - Manifest generation prepares automation handoff data but does not submit applications.
-- Pipeline, readiness checker, application packet builder, submission planner, apply assistant, form-fill planner, apply readiness gate, and Automation Unit currently validate packages and write reports only; they do not apply to jobs.
+- Pipeline, apply-prep pipeline, readiness checker, application packet builder, submission planner, apply assistant, form-fill planner, apply readiness gate, and Automation Unit currently validate packages and write reports only; they do not apply to jobs.
 - Apply assistant can open the job URL in a browser, but it does not fill forms or submit applications.
 - Form-fill planner prepares field mappings, but it does not interact with web pages.
 - Recruiter Review Agent is offline/rule-based by default; optional AI mode can add a second review pass.
