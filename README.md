@@ -17,6 +17,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Saves copied job descriptions into a local job inbox
 - Runs the safe generation/check/review workflow with one pipeline command
 - Runs the safe pipeline for multiple job description files in a batch
+- Creates a final ready-to-apply report for generated packages
 - Optionally exports generated documents to simple HTML, DOCX, and PDF files
 - Optionally creates review notes with matched keywords and a pre-apply checklist
 - Optionally prepares an offline AI brief for future tailoring
@@ -184,6 +185,12 @@ Write the Automation Unit check as a report file:
 python automation_unit.py check outputs/example-ltd-support-engineer/application_manifest.json --write-report
 ```
 
+Check whether a generated package is ready for the final apply step:
+
+```bash
+python readiness_checker.py outputs/example-ltd-support-engineer --write-report
+```
+
 Review generated drafts like a recruiter:
 
 ```bash
@@ -248,7 +255,9 @@ The AI draft and revision prompts explicitly tell the model to avoid generic fil
 
 `job_intake.py` saves copied job descriptions into the ignored `jobs/` folder and updates `jobs/job_index.json`. It does not scrape job boards or submit applications.
 
-`pipeline.py` runs profile validation, full package generation, the Automation Unit check, and recruiter review in order. It writes `pipeline_report.md` in the selected output folder. It does not submit applications.
+`pipeline.py` runs profile validation, full package generation, the Automation Unit check, recruiter review, and readiness check in order. It writes `pipeline_report.md` in the selected output folder. It does not submit applications.
+
+`readiness_checker.py` reads a generated output folder or manifest and writes `ready_to_apply_report.md`. It checks required package files, manifest consistency, offline recruiter review score, warnings, optional AI review files, and tracker linkage. It does not submit applications.
 
 `batch_pipeline.py` runs `pipeline.py` for every `.txt` job description in a folder. It creates one output folder per job and writes `batch_report.md` in the batch output root. It continues after failed jobs by default, or stops early with `--stop-on-error`.
 
@@ -318,6 +327,7 @@ Review these files before applying:
 - `ai_brief.md`
 - `ai_revision_notes.md` when `--ai-auto-revise` is used
 - `profile_improvement_guide.md` when `--write-guide` is used
+- `ready_to_apply_report.md`
 - `pipeline_report.md` when `pipeline.py` is used
 - `batch_report.md` when `batch_pipeline.py` is used
 
@@ -331,6 +341,12 @@ Then run the Recruiter Review Agent:
 
 ```bash
 python automation_unit.py review outputs/example-ltd-support-engineer/application_manifest.json --write-report
+```
+
+Then run the readiness gate:
+
+```bash
+python readiness_checker.py outputs/example-ltd-support-engineer --write-report
 ```
 
 Optional AI recruiter check:
@@ -410,6 +426,7 @@ profile_validator.py
 job_intake.py
 pipeline.py
 batch_pipeline.py
+readiness_checker.py
 ai_draft_generator.py
 ai_draft_reviser.py
 ai_reviewer.py
@@ -476,7 +493,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, job intake, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, job intake, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, readiness checking, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 AI draft/revision/reviewer tests use mocks and do not call the OpenAI API.
 The full package command is also covered by the automated tests.
 
@@ -490,7 +507,7 @@ The full package command is also covered by the automated tests.
 - DOCX/PDF exports are simple offline documents for the resume and cover letter, not custom-designed templates.
 - AI brief generation is offline. Optional AI draft generation, automatic revision, and recruiter review only run when requested.
 - Manifest generation prepares automation handoff data but does not submit applications.
-- Pipeline and Automation Unit currently validate packages and write reports only; they do not apply to jobs.
+- Pipeline, readiness checker, and Automation Unit currently validate packages and write reports only; they do not apply to jobs.
 - Recruiter Review Agent is offline/rule-based by default; optional AI mode can add a second review pass.
 - Job tracker is local-only and uses SQLite.
 

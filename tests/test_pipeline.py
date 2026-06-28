@@ -71,10 +71,11 @@ class PipelineTests(unittest.TestCase):
                 "Application package generation",
                 "Automation Unit check",
                 "Recruiter review",
+                "Readiness check",
             ],
         )
         self.assertIn("--strict", commands[0])
-        self.assertIn("--ai-review", commands[-1])
+        self.assertIn("--ai-review", commands[-2])
 
     def test_build_pipeline_report_marks_stopped_when_step_fails(self) -> None:
         args = make_args()

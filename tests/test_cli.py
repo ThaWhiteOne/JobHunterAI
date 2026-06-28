@@ -356,6 +356,34 @@ class CliTests(unittest.TestCase):
                 review_path.read_text(encoding="utf-8"),
             )
 
+    def test_readiness_checker_cli_writes_ready_to_apply_report(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            generate_result = run_command(
+                [
+                    "pipeline.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                ]
+            )
+            readiness_result = run_command(
+                [
+                    "readiness_checker.py",
+                    str(output_dir / "application_manifest.json"),
+                    "--write-report",
+                ]
+            )
+            report_path = output_dir / "ready_to_apply_report.md"
+
+            self.assertEqual(generate_result.returncode, 0, generate_result.stderr)
+            self.assertEqual(readiness_result.returncode, 0, readiness_result.stderr)
+            self.assertIn("Ready To Apply Report", readiness_result.stdout)
+            self.assertTrue(report_path.exists())
+            self.assertIn("Ready To Apply Report", report_path.read_text(encoding="utf-8"))
+
     def test_tracker_cli_add_list_and_stats(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"
@@ -435,9 +463,11 @@ class CliTests(unittest.TestCase):
             self.assertIn("Application package generation: OK", result.stdout)
             self.assertIn("Automation Unit check: OK", result.stdout)
             self.assertIn("Recruiter review: OK", result.stdout)
+            self.assertIn("Readiness check: OK", result.stdout)
             self.assertTrue((output_dir / "application_manifest.json").exists())
             self.assertTrue((output_dir / "automation_report.md").exists())
             self.assertTrue((output_dir / "recruiter_review.md").exists())
+            self.assertTrue((output_dir / "ready_to_apply_report.md").exists())
             self.assertTrue((output_dir / "pipeline_report.md").exists())
 
     def test_batch_pipeline_cli_runs_multiple_offline_jobs(self) -> None:
