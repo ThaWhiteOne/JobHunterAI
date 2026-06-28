@@ -780,6 +780,71 @@ class CliTests(unittest.TestCase):
             plan = json.loads((output_dir / "page_action_plan.json").read_text(encoding="utf-8"))
             self.assertFalse(plan["execute_automatically"])
 
+    def test_page_action_gate_cli_writes_report(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+            output_dir.mkdir()
+            dry_run_path = output_dir / "browser_dry_run.json"
+            html_path = Path(temp_dir) / "application_page.html"
+            dry_run_path.write_text(
+                json.dumps(
+                    {
+                        "status": "ready",
+                        "submission_allowed": False,
+                        "stop_before_submit": True,
+                        "actions": [
+                            {
+                                "step": 1,
+                                "action": "fill_contact_field",
+                                "target": "email",
+                                "status": "ready",
+                                "value": "candidate@example.com",
+                            },
+                            {
+                                "step": 2,
+                                "action": "stop_before_submit",
+                                "target": "final_submit_button",
+                                "status": "stop",
+                                "value": "",
+                            },
+                        ],
+                        "guardrails": ["Do not submit applications automatically."],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            html_path.write_text(
+                "<form><label>Email <input id='email' type='email' name='email'></label>"
+                "<button type='submit'>Submit application</button></form>",
+                encoding="utf-8",
+            )
+
+            inspection_result = run_command(
+                [
+                    "page_inspector.py",
+                    str(output_dir),
+                    "--html",
+                    str(html_path),
+                    "--write",
+                ]
+            )
+            plan_result = run_command(["page_action_plan.py", str(output_dir), "--write"])
+            gate_result = run_command(
+                [
+                    "page_action_gate.py",
+                    str(output_dir),
+                    "--write-report",
+                ]
+            )
+            report_path = output_dir / "page_action_gate_report.md"
+
+            self.assertEqual(inspection_result.returncode, 0, inspection_result.stderr)
+            self.assertEqual(plan_result.returncode, 0, plan_result.stderr)
+            self.assertEqual(gate_result.returncode, 0, gate_result.stderr)
+            self.assertIn("Page Action Gate Report", gate_result.stdout)
+            self.assertTrue(report_path.exists())
+            self.assertIn("Status: Ready", report_path.read_text(encoding="utf-8"))
+
     def test_apply_prep_pipeline_cli_runs_safe_apply_prep_flow(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)

@@ -28,6 +28,8 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Prepares a controlled live browser review session
 - Inspects saved application-page HTML against the browser dry-run plan
 - Creates a non-executing selector action plan from inspected page fields
+- Gates the selector action plan before any future browser automation runner
+- Provides a desktop-only UI with sidebar navigation, workflow buttons, and a live pipeline console
 - Runs the full safe apply-prep workflow with one command
 - Runs the safe apply-prep workflow for multiple saved jobs in a batch
 - Summarizes generated single-job and batch outputs in a status dashboard
@@ -51,6 +53,12 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 
 ```bash
 python main.py
+```
+
+Launch the desktop UI:
+
+```bash
+python desktop_app.py
 ```
 
 Use a custom job description file:
@@ -295,6 +303,12 @@ Create a selector action plan from the page inspection:
 python page_action_plan.py outputs/example-ltd-support-engineer --write
 ```
 
+Gate the selector action plan:
+
+```bash
+python page_action_gate.py outputs/example-ltd-support-engineer --write-report
+```
+
 Open the job URL from the packet in your default browser:
 
 ```bash
@@ -390,6 +404,10 @@ The AI draft and revision prompts explicitly tell the model to avoid generic fil
 `page_inspector.py --url` can explicitly fetch a page with the Python standard library for inspection, but it still only reads HTML and writes reports.
 
 `page_action_plan.py` reads `page_inspection.json` and writes `page_action_plan.json` and `page_action_plan.md`. It converts matched page fields into selector-style steps for future browser automation. It does not execute selectors, fill fields, upload files, click apply, or submit applications.
+
+`page_action_gate.py` reads `page_action_plan.json` and writes `page_action_gate_report.md`. It blocks future automation if selectors are missing, review steps remain, stop rules are missing, or any execution/submission flags are unsafe. It does not execute selectors, fill fields, upload files, click apply, or submit applications.
+
+`desktop_app.py` launches a desktop-only Tkinter UI with left-side navigation, workflow buttons, settings/profile views, and a console window that streams pipeline output. It wraps existing safe commands and does not bypass any gate or submit applications.
 
 `apply_prep_pipeline.py` runs the safe chain in order: package pipeline, form-fill plan, apply readiness gate, browser automation dry run, then controlled apply session only when the gate passes. It writes `apply_prep_report.md`. It does not fill forms or submit applications.
 
@@ -487,6 +505,7 @@ Review these files before applying:
 - `browser_review_session.md` when `browser_review_session.py --write` is used
 - `page_inspection.json` and `page_inspection.md` when `page_inspector.py --write` is used
 - `page_action_plan.json` and `page_action_plan.md` when `page_action_plan.py --write` is used
+- `page_action_gate_report.md` when `page_action_gate.py --write-report` is used
 - `apply_prep_report.md` when `apply_prep_pipeline.py` is used
 - `pipeline_report.md` when `pipeline.py` is used
 - `batch_report.md` when `batch_pipeline.py` is used
@@ -563,6 +582,12 @@ Then create the non-executing page action plan:
 
 ```bash
 python page_action_plan.py outputs/example-ltd-support-engineer --write
+```
+
+Then gate the page action plan:
+
+```bash
+python page_action_gate.py outputs/example-ltd-support-engineer --write-report
 ```
 
 For reusable application form answers, first create the local ignored answers file:
@@ -642,6 +667,8 @@ python tracker.py list
 
 ```text
 main.py
+desktop_app.py
+desktop_ui_model.py
 tracker.py
 automation_unit.py
 profile_validator.py
@@ -654,6 +681,7 @@ browser_dry_run.py
 browser_review_session.py
 page_inspector.py
 page_action_plan.py
+page_action_gate.py
 readiness_checker.py
 application_packet.py
 submission_planner.py
@@ -729,7 +757,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, job intake, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, safe apply-prep orchestration, batch apply-prep orchestration, status dashboard summaries, readiness checking, application packet generation, submission planning, controlled apply session setup, safe form-fill planning, apply readiness gating, browser dry-run action planning, browser review sessions, page inspection, page action planning, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, desktop UI command wiring, job intake, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, safe apply-prep orchestration, batch apply-prep orchestration, status dashboard summaries, readiness checking, application packet generation, submission planning, controlled apply session setup, safe form-fill planning, apply readiness gating, browser dry-run action planning, browser review sessions, page inspection, page action planning and gating, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 AI draft/revision/reviewer tests use mocks and do not call the OpenAI API.
 The full package command is also covered by the automated tests.
 
@@ -744,14 +772,16 @@ The full package command is also covered by the automated tests.
 - DOCX/PDF exports are simple offline documents for the resume and cover letter, not custom-designed templates.
 - AI brief generation is offline. Optional AI draft generation, automatic revision, and recruiter review only run when requested.
 - Manifest generation prepares automation handoff data but does not submit applications.
-- Pipeline, batch pipeline, apply-prep pipeline, batch apply-prep pipeline, status dashboard, readiness checker, application packet builder, submission planner, apply assistant, form-fill planner, apply readiness gate, browser dry run, browser review session, page inspector, page action planner, and Automation Unit currently validate packages and write reports only; they do not apply to jobs.
+- Pipeline, batch pipeline, apply-prep pipeline, batch apply-prep pipeline, status dashboard, readiness checker, application packet builder, submission planner, apply assistant, form-fill planner, apply readiness gate, browser dry run, browser review session, page inspector, page action planner/gate, and Automation Unit currently validate packages and write reports only; they do not apply to jobs.
 - Apply assistant can open the job URL in a browser, but it does not fill forms or submit applications.
-- Form-fill planner, browser dry run, browser review session, page inspector, and page action planner prepare field mappings and future actions, but they do not fill web pages.
+- Form-fill planner, browser dry run, browser review session, page inspector, and page action planner/gate prepare field mappings and future actions, but they do not fill web pages.
 - Recruiter Review Agent is offline/rule-based by default; optional AI mode can add a second review pass.
 - Job tracker is local-only and uses SQLite.
+- Desktop UI wraps the current safe commands; it is not packaged as an installer yet.
 
 ## Roadmap
 
+- Package the desktop UI as a Windows app
 - Improve DOCX/PDF styling templates
 - Refine optional AI review prompts with real application feedback
 - Add controlled browser/job-site automation with explicit user approval gates
