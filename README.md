@@ -22,6 +22,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Creates a non-submitting submission plan for the final apply step
 - Opens a controlled apply session without filling forms or submitting
 - Creates a safe form-fill plan for future browser automation
+- Reuses local application answers from an ignored profile file when available
 - Optionally exports generated documents to simple HTML, DOCX, and PDF files
 - Optionally creates review notes with matched keywords and a pre-apply checklist
 - Optionally prepares an offline AI brief for future tailoring
@@ -219,6 +220,13 @@ Create a safe form-fill plan for future browser automation:
 python form_fill_planner.py outputs/example-ltd-support-engineer --write
 ```
 
+Use a local application answers file for repeated form answers:
+
+```bash
+copy profiles\application_answers.example.md profiles\application_answers.md
+python form_fill_planner.py outputs/example-ltd-support-engineer --write
+```
+
 Open the job URL from the packet in your default browser:
 
 ```bash
@@ -299,7 +307,9 @@ The AI draft and revision prompts explicitly tell the model to avoid generic fil
 
 `apply_assistant.py` reads `application_packet.json`, checks that the package is ready, optionally opens the job URL in the default browser, and writes `apply_session.md`. It does not fill forms, click apply, or submit applications.
 
-`form_fill_planner.py` reads `application_packet.json` and `profiles/master_profile.md`, then writes `form_fill_plan.json` and `form_fill_plan.md`. The plan includes safe contact fields, preferred document uploads, review-only fields, and guardrails. It does not fill forms or submit applications.
+`form_fill_planner.py` reads `application_packet.json`, `profiles/master_profile.md`, and optional `profiles/application_answers.md`, then writes `form_fill_plan.json` and `form_fill_plan.md`. The plan includes safe contact fields, preferred document uploads, reusable application answers, review-only fields, and guardrails. It does not fill forms or submit applications.
+
+`profiles/application_answers.example.md` is a tracked template. Copy it to `profiles/application_answers.md` and fill in truthful reusable answers such as work authorization, visa sponsorship, start date, and salary expectation. `profiles/application_answers.md` is ignored by Git.
 
 `batch_pipeline.py` runs `pipeline.py` for every `.txt` job description in a folder. It creates one output folder per job and writes `batch_report.md` in the batch output root. It continues after failed jobs by default, or stops early with `--stop-on-error`.
 
@@ -419,6 +429,12 @@ Then create the safe form-fill plan:
 python form_fill_planner.py outputs/example-ltd-support-engineer --write
 ```
 
+For reusable application form answers, first create the local ignored answers file:
+
+```bash
+copy profiles\application_answers.example.md profiles\application_answers.md
+```
+
 Optional AI recruiter check:
 
 ```bash
@@ -521,6 +537,7 @@ requirements.txt
 .gitignore
 examples/sample_job.txt
 profiles/master_profile.md
+profiles/application_answers.example.md
 profiles/support_cv.md
 profiles/developer_cv.md
 profiles/cyber_cv.md
@@ -578,6 +595,7 @@ The full package command is also covered by the automated tests.
 - Job intake currently saves manually copied job descriptions; automated search/import is still future work.
 - Profile validation warns about missing dates, but the user still needs to add truthful dates to profile files.
 - The profile improvement guide suggests what to add, but it does not edit profile facts automatically.
+- Reusable application answers are optional and must be filled truthfully in local `profiles/application_answers.md`.
 - DOCX/PDF exports are simple offline documents for the resume and cover letter, not custom-designed templates.
 - AI brief generation is offline. Optional AI draft generation, automatic revision, and recruiter review only run when requested.
 - Manifest generation prepares automation handoff data but does not submit applications.

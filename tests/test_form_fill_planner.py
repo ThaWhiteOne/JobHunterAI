@@ -9,6 +9,7 @@ from form_fill_planner import (
     field_action,
     json_plan_path,
     markdown_plan_path,
+    parse_application_answers,
     parse_profile_fields,
     select_document,
 )
@@ -36,6 +37,22 @@ LinkedIn:
 (Later)
 """
 
+SAMPLE_ANSWERS = """Work authorization:
+Eligible to work in Bulgaria
+
+Visa sponsorship:
+No sponsorship required
+
+Notice period / start date:
+Available after two weeks notice
+
+Salary expectation:
+Open to market range
+
+Custom screening questions:
+Use profile-backed answers only
+"""
+
 
 class FormFillPlannerTests(unittest.TestCase):
     def test_parse_profile_fields_reads_contact_fields_and_ignores_age(self) -> None:
@@ -51,7 +68,16 @@ class FormFillPlannerTests(unittest.TestCase):
     def test_field_action_flags_unfinished_profile_values(self) -> None:
         self.assertEqual(field_action("(Later)"), "needs_profile_update")
         self.assertEqual(field_action(""), "needs_profile_update")
+        self.assertEqual(field_action("TODO"), "needs_profile_update")
         self.assertEqual(field_action("candidate@example.com"), "fill")
+
+    def test_parse_application_answers_reads_reusable_form_answers(self) -> None:
+        answers = parse_application_answers(SAMPLE_ANSWERS)
+
+        self.assertEqual(answers["work_authorization"], "Eligible to work in Bulgaria")
+        self.assertEqual(answers["visa_sponsorship"], "No sponsorship required")
+        self.assertEqual(answers["start_date"], "Available after two weeks notice")
+        self.assertEqual(answers["salary_expectation"], "Open to market range")
 
     def test_select_document_prefers_first_available_choice(self) -> None:
         document = select_document(
@@ -70,7 +96,11 @@ class FormFillPlannerTests(unittest.TestCase):
         packet["files"]["resume_docx"] = "outputs/example/resume.docx"
         profile_fields = parse_profile_fields(SAMPLE_PROFILE)
 
-        plan = build_form_fill_plan(packet, profile_fields)
+        plan = build_form_fill_plan(
+            packet,
+            profile_fields,
+            parse_application_answers(SAMPLE_ANSWERS),
+        )
 
         field_names = [field["field"] for field in plan["contact_fields"]]
         self.assertIn("full_name", field_names)
@@ -83,11 +113,22 @@ class FormFillPlannerTests(unittest.TestCase):
         )
         self.assertEqual(linkedin_field["value"], "")
         self.assertEqual(linkedin_field["action"], "needs_profile_update")
+        work_authorization = next(
+            field
+            for field in plan["application_answer_fields"]
+            if field["key"] == "work_authorization"
+        )
+        self.assertEqual(work_authorization["action"], "fill")
+        self.assertEqual(work_authorization["value"], "Eligible to work in Bulgaria")
         self.assertIn("Do not submit the application automatically.", plan["guardrails"])
 
     def test_build_markdown_report_describes_non_submitting_plan(self) -> None:
         packet = sample_packet()
-        plan = build_form_fill_plan(packet, parse_profile_fields(SAMPLE_PROFILE))
+        plan = build_form_fill_plan(
+            packet,
+            parse_profile_fields(SAMPLE_PROFILE),
+            parse_application_answers(SAMPLE_ANSWERS),
+        )
 
         report = build_markdown_report(
             plan,
@@ -97,6 +138,20 @@ class FormFillPlannerTests(unittest.TestCase):
         self.assertIn("Form Fill Plan", report)
         self.assertIn("does not fill forms or submit applications", report)
         self.assertIn("linkedin: needs_profile_update", report)
+        self.assertIn("Work authorization: fill", report)
+
+    def test_build_form_fill_plan_marks_missing_answers_as_review_required(self) -> None:
+        packet = sample_packet()
+
+        plan = build_form_fill_plan(packet, parse_profile_fields(SAMPLE_PROFILE))
+
+        work_authorization = next(
+            field
+            for field in plan["application_answer_fields"]
+            if field["key"] == "work_authorization"
+        )
+        self.assertEqual(work_authorization["action"], "requires_user_source_value")
+        self.assertEqual(work_authorization["value"], "")
 
     def test_plan_paths_live_beside_packet(self) -> None:
         packet_path = Path("outputs/example/application_packet.json")
@@ -116,6 +171,7 @@ class FormFillPlannerTests(unittest.TestCase):
             plan = build_form_fill_plan(
                 sample_packet(),
                 parse_profile_fields(SAMPLE_PROFILE),
+                parse_application_answers(SAMPLE_ANSWERS),
             )
             path.write_text(json.dumps(plan), encoding="utf-8")
 

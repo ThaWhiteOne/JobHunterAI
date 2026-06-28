@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from config import MASTER_PROFILE_PATH
+from config import MASTER_PROFILE_PATH, PROFILES_DIR
 from file_utils import read_text_file, write_text_file
 from submission_planner import load_packet, packet_has_blockers, resolve_packet_path
 
@@ -35,6 +35,16 @@ USER_REVIEW_FIELDS = [
     "Voluntary demographic questions",
 ]
 
+APPLICATION_ANSWER_LABELS = {
+    "Work authorization": "work_authorization",
+    "Visa sponsorship": "visa_sponsorship",
+    "Notice period / start date": "start_date",
+    "Salary expectation": "salary_expectation",
+    "Custom screening questions": "custom_screening_questions",
+}
+
+DEFAULT_APPLICATION_ANSWERS_PATH = PROFILES_DIR / "application_answers.md"
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -52,6 +62,12 @@ def parse_args() -> argparse.Namespace:
         help="Candidate profile file used as the source of truth.",
     )
     parser.add_argument(
+        "--answers",
+        type=Path,
+        default=DEFAULT_APPLICATION_ANSWERS_PATH,
+        help="Optional local application answers file.",
+    )
+    parser.add_argument(
         "--write",
         action="store_true",
         help="Write form_fill_plan.json and form_fill_plan.md beside the packet.",
@@ -59,14 +75,14 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def parse_profile_fields(profile_text: str) -> dict[str, str]:
-    lines = profile_text.splitlines()
+def parse_labeled_fields(text: str, labels: dict[str, str]) -> dict[str, str]:
+    lines = text.splitlines()
     fields = {}
     index = 0
     while index < len(lines):
         line = lines[index].strip()
         matched_label = None
-        for label in PROFILE_LABELS:
+        for label in labels:
             if line.lower().startswith(f"{label.lower()}:"):
                 matched_label = label
                 break
@@ -85,20 +101,28 @@ def parse_profile_fields(profile_text: str) -> dict[str, str]:
                     break
                 if any(
                     next_line.lower().startswith(f"{label.lower()}:")
-                    for label in PROFILE_LABELS
+                    for label in labels
                 ):
                     break
                 value_lines.append(next_line)
                 lookahead += 1
             value = " ".join(value_lines).strip()
 
-        fields[PROFILE_LABELS[matched_label]] = value
+        fields[labels[matched_label]] = value
         index += 1
     return fields
 
 
+def parse_profile_fields(profile_text: str) -> dict[str, str]:
+    return parse_labeled_fields(profile_text, PROFILE_LABELS)
+
+
+def parse_application_answers(answers_text: str) -> dict[str, str]:
+    return parse_labeled_fields(answers_text, APPLICATION_ANSWER_LABELS)
+
+
 def field_action(value: str) -> str:
-    if not value or value.lower() in {"later", "(later)", "n/a", "na"}:
+    if not value or value.lower() in {"later", "(later)", "n/a", "na", "todo", "tbd"}:
         return "needs_profile_update"
     return "fill"
 
@@ -134,9 +158,35 @@ def build_document_uploads(files: dict[str, str]) -> dict[str, dict[str, str]]:
     }
 
 
-def build_form_fill_plan(packet: dict[str, Any], profile_fields: dict[str, str]) -> dict[str, Any]:
+def build_answer_fields(answers: dict[str, str]) -> list[dict[str, str]]:
+    answer_fields = []
+    for label in USER_REVIEW_FIELDS:
+        key = APPLICATION_ANSWER_LABELS.get(label)
+        value = answers.get(key, "") if key else ""
+        action = field_action(value) if key else "requires_user_source_value"
+        if not key:
+            value = ""
+        answer_fields.append(
+            {
+                "field": label,
+                "key": key or "",
+                "value": value if action == "fill" else "",
+                "source": "profiles/application_answers.md" if key else "",
+                "action": action if action == "fill" else "requires_user_source_value",
+                "note": "Do not guess or invent this value.",
+            }
+        )
+    return answer_fields
+
+
+def build_form_fill_plan(
+    packet: dict[str, Any],
+    profile_fields: dict[str, str],
+    application_answers: dict[str, str] | None = None,
+) -> dict[str, Any]:
     files = packet.get("files", {})
     job = packet.get("job", {})
+    answers = application_answers or {}
     return {
         "status": "prepared_not_submitted",
         "submission_allowed": False,
@@ -154,14 +204,7 @@ def build_form_fill_plan(packet: dict[str, Any], profile_fields: dict[str, str])
                 "action": "copy_when_needed" if files.get("linkedin_message") else "missing",
             }
         },
-        "user_review_fields": [
-            {
-                "field": field,
-                "action": "requires_user_source_value",
-                "note": "Do not guess or invent this value.",
-            }
-            for field in USER_REVIEW_FIELDS
-        ],
+        "application_answer_fields": build_answer_fields(answers),
         "guardrails": [
             *packet.get("guardrails", []),
             "Do not fill protected demographic fields automatically.",
@@ -215,7 +258,11 @@ def build_markdown_report(plan: dict[str, Any], packet_path: Path) -> str:
         "",
         "## User Review Fields",
         "",
-        *[f"- {field['field']}: {field['action']}" for field in plan["user_review_fields"]],
+        *[
+            f"- {field['field']}: {field['action']}"
+            + (f" ({field['value']})" if field["value"] else "")
+            for field in plan["application_answer_fields"]
+        ],
         "",
         "## Guardrails",
         "",
@@ -232,10 +279,15 @@ def main() -> None:
         if packet_has_blockers(packet):
             raise ValueError("Application packet is not ready for form-fill planning.")
         profile_text = read_text_file(args.profile)
+        answers_text = read_text_file(args.answers, required=False)
     except (FileNotFoundError, ValueError) as error:
         raise SystemExit(f"Form-fill planning failed.\nError: {error}") from error
 
-    plan = build_form_fill_plan(packet, parse_profile_fields(profile_text))
+    plan = build_form_fill_plan(
+        packet,
+        parse_profile_fields(profile_text),
+        parse_application_answers(answers_text) if answers_text else {},
+    )
     json_report = json.dumps(plan, indent=2)
     markdown_report = build_markdown_report(plan, packet_path)
     print(markdown_report)
