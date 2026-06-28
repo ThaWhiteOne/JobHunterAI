@@ -584,6 +584,48 @@ class CliTests(unittest.TestCase):
             self.assertTrue((output_dir / "apply_readiness_report.md").exists())
             self.assertTrue((output_dir / "apply_session.md").exists())
 
+    def test_batch_apply_prep_pipeline_cli_runs_multiple_jobs(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            jobs_dir = temp_path / "jobs"
+            output_root = temp_path / "batch-apply-prep"
+            answers_path = temp_path / "application_answers.md"
+            jobs_dir.mkdir()
+            (jobs_dir / "support-job.txt").write_text(
+                "Technical Support Engineer, SQL, troubleshooting, customer support",
+                encoding="utf-8",
+            )
+            (jobs_dir / "developer-job.txt").write_text(
+                "Junior Python Developer, APIs, backend, Git, web applications",
+                encoding="utf-8",
+            )
+            answers_path.write_text(
+                "Work authorization:\nEligible to work in Bulgaria\n\n"
+                "Visa sponsorship:\nNo sponsorship required\n\n"
+                "Notice period / start date:\nAvailable after two weeks notice\n\n"
+                "Salary expectation:\nOpen to market range\n",
+                encoding="utf-8",
+            )
+
+            result = run_command(
+                [
+                    "batch_apply_prep_pipeline.py",
+                    "--jobs-dir",
+                    str(jobs_dir),
+                    "--output-root",
+                    str(output_root),
+                    "--answers",
+                    str(answers_path),
+                ]
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("support-job.txt: OK", result.stdout)
+            self.assertIn("developer-job.txt: OK", result.stdout)
+            self.assertTrue((output_root / "support-job" / "apply_prep_report.md").exists())
+            self.assertTrue((output_root / "developer-job" / "apply_prep_report.md").exists())
+            self.assertTrue((output_root / "batch_apply_prep_report.md").exists())
+
     def test_tracker_cli_add_list_and_stats(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"
