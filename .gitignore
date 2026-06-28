@@ -11,6 +11,9 @@ __pycache__/
 # Outputs
 outputs/
 
+# Local batch job descriptions
+jobs/
+
 # VSCode
 .vscode/
 

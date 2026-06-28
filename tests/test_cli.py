@@ -428,6 +428,38 @@ class CliTests(unittest.TestCase):
             self.assertTrue((output_dir / "recruiter_review.md").exists())
             self.assertTrue((output_dir / "pipeline_report.md").exists())
 
+    def test_batch_pipeline_cli_runs_multiple_offline_jobs(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            jobs_dir = temp_path / "jobs"
+            output_root = temp_path / "batch-output"
+            jobs_dir.mkdir()
+            (jobs_dir / "support-job.txt").write_text(
+                "Technical Support Engineer, SQL, troubleshooting, customer support",
+                encoding="utf-8",
+            )
+            (jobs_dir / "developer-job.txt").write_text(
+                "Junior Python Developer, APIs, backend, Git, web applications",
+                encoding="utf-8",
+            )
+
+            result = run_command(
+                [
+                    "batch_pipeline.py",
+                    "--jobs-dir",
+                    str(jobs_dir),
+                    "--output-root",
+                    str(output_root),
+                ]
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("support-job.txt: OK", result.stdout)
+            self.assertIn("developer-job.txt: OK", result.stdout)
+            self.assertTrue((output_root / "support-job" / "pipeline_report.md").exists())
+            self.assertTrue((output_root / "developer-job" / "pipeline_report.md").exists())
+            self.assertTrue((output_root / "batch_report.md").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
