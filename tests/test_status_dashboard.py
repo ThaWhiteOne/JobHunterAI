@@ -32,6 +32,10 @@ def write_output_dir(path: Path, role: str = "support", apply_status: str = "Rea
         "# Browser Automation Dry Run\n\nStatus: Ready\n",
         encoding="utf-8",
     )
+    (path / "browser_review_session.md").write_text(
+        "# Browser Review Session\n\nStatus: Prepared, not submitted\n",
+        encoding="utf-8",
+    )
     (path / "page_inspection.json").write_text("{}", encoding="utf-8")
     (path / "page_inspection.md").write_text(
         "# Page Inspection Report\n\nStatus: Ready for manual review\n",
@@ -73,11 +77,16 @@ class StatusDashboardTests(unittest.TestCase):
             self.assertEqual(summary.statuses["apply_readiness"], "Ready")
             self.assertEqual(summary.statuses["browser_dry_run"], "Ready")
             self.assertEqual(
+                summary.statuses["browser_review_session"],
+                "Prepared, not submitted",
+            )
+            self.assertEqual(
                 summary.statuses["page_inspection"],
                 "Ready for manual review",
             )
             self.assertTrue(summary.key_files["resume"])
             self.assertTrue(summary.key_files["browser_dry_run"])
+            self.assertTrue(summary.key_files["browser_review_session"])
             self.assertTrue(summary.key_files["page_inspection"])
             self.assertEqual(summary.overall_status, "Ready")
 

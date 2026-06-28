@@ -12,6 +12,7 @@ STATUS_FILES = {
     "readiness": "ready_to_apply_report.md",
     "apply_readiness": "apply_readiness_report.md",
     "browser_dry_run": "browser_dry_run.md",
+    "browser_review_session": "browser_review_session.md",
     "page_inspection": "page_inspection.md",
     "apply_prep": "apply_prep_report.md",
     "batch": "batch_report.md",
@@ -96,6 +97,7 @@ def summarize_output_dir(output_dir: Path) -> OutputSummary:
         "application_packet": (output_dir / "application_packet.json").exists(),
         "form_fill_plan": (output_dir / "form_fill_plan.json").exists(),
         "browser_dry_run": (output_dir / "browser_dry_run.json").exists(),
+        "browser_review_session": (output_dir / "browser_review_session.md").exists(),
         "page_inspection": (output_dir / "page_inspection.json").exists(),
         "apply_session": (output_dir / "apply_session.md").exists(),
     }

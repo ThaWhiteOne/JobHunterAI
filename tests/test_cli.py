@@ -659,6 +659,63 @@ class CliTests(unittest.TestCase):
             self.assertFalse(inspection["submission_allowed"])
             self.assertTrue(inspection["stop_button_detected"])
 
+    def test_browser_review_session_cli_writes_session_and_inspection(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+            output_dir.mkdir()
+            dry_run_path = output_dir / "browser_dry_run.json"
+            html_path = Path(temp_dir) / "application_page.html"
+            dry_run_path.write_text(
+                json.dumps(
+                    {
+                        "status": "ready",
+                        "submission_allowed": False,
+                        "stop_before_submit": True,
+                        "job": {"job_url": "https://example.com/job"},
+                        "readiness": {"status": "Ready"},
+                        "actions": [
+                            {
+                                "step": 1,
+                                "action": "fill_contact_field",
+                                "target": "email",
+                                "status": "ready",
+                                "value": "candidate@example.com",
+                            },
+                            {
+                                "step": 2,
+                                "action": "stop_before_submit",
+                                "target": "final_submit_button",
+                                "status": "stop",
+                                "value": "",
+                            },
+                        ],
+                        "guardrails": ["Do not submit applications automatically."],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            html_path.write_text(
+                "<form><label>Email <input type='email' name='email'></label>"
+                "<button type='submit'>Submit application</button></form>",
+                encoding="utf-8",
+            )
+
+            result = run_command(
+                [
+                    "browser_review_session.py",
+                    str(output_dir),
+                    "--html",
+                    str(html_path),
+                    "--write",
+                ]
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Browser Review Session", result.stdout)
+            self.assertTrue((output_dir / "browser_review_session.md").exists())
+            self.assertTrue((output_dir / "page_inspection.json").exists())
+            self.assertTrue((output_dir / "page_inspection.md").exists())
+
     def test_apply_prep_pipeline_cli_runs_safe_apply_prep_flow(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
