@@ -25,6 +25,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Reuses local application answers from an ignored profile file when available
 - Checks whether the form-fill plan is ready for future browser automation
 - Creates a non-submitting browser automation dry-run action plan
+- Inspects saved application-page HTML against the browser dry-run plan
 - Runs the full safe apply-prep workflow with one command
 - Runs the safe apply-prep workflow for multiple saved jobs in a batch
 - Summarizes generated single-job and batch outputs in a status dashboard
@@ -268,6 +269,12 @@ Create a browser automation dry-run action plan:
 python browser_dry_run.py outputs/example-ltd-support-engineer --write
 ```
 
+Inspect a saved application-page HTML file:
+
+```bash
+python page_inspector.py outputs/example-ltd-support-engineer --html examples/sample_application_page.html --write
+```
+
 Open the job URL from the packet in your default browser:
 
 ```bash
@@ -355,6 +362,10 @@ The AI draft and revision prompts explicitly tell the model to avoid generic fil
 `apply_readiness_gate.py` reads `form_fill_plan.json` and writes `apply_readiness_report.md`. It blocks future automation when required contact fields, documents, or reusable application answers are missing. It does not fill forms or submit applications.
 
 `browser_dry_run.py` reads `form_fill_plan.json`, checks apply readiness, and writes `browser_dry_run.json` and `browser_dry_run.md`. It converts source-backed profile data, document uploads, reusable answers, and stop rules into future browser-style actions. It does not open browsers, fill forms, click apply, or submit applications.
+
+`page_inspector.py` reads `browser_dry_run.json` and a saved HTML page passed with `--html`, then writes `page_inspection.json` and `page_inspection.md`. It detects visible form fields, upload fields, and submit buttons, then compares them with the planned dry-run actions. It does not fill fields, click apply, or submit applications.
+
+`page_inspector.py --url` can explicitly fetch a page with the Python standard library for inspection, but it still only reads HTML and writes reports.
 
 `apply_prep_pipeline.py` runs the safe chain in order: package pipeline, form-fill plan, apply readiness gate, browser automation dry run, then controlled apply session only when the gate passes. It writes `apply_prep_report.md`. It does not fill forms or submit applications.
 
@@ -449,6 +460,7 @@ Review these files before applying:
 - `form_fill_plan.json` and `form_fill_plan.md` when `form_fill_planner.py --write` is used
 - `apply_readiness_report.md` when `apply_readiness_gate.py --write-report` is used
 - `browser_dry_run.json` and `browser_dry_run.md` when `browser_dry_run.py --write` is used
+- `page_inspection.json` and `page_inspection.md` when `page_inspector.py --write` is used
 - `apply_prep_report.md` when `apply_prep_pipeline.py` is used
 - `pipeline_report.md` when `pipeline.py` is used
 - `batch_report.md` when `batch_pipeline.py` is used
@@ -507,6 +519,12 @@ Then create the browser automation dry run:
 
 ```bash
 python browser_dry_run.py outputs/example-ltd-support-engineer --write
+```
+
+Then inspect a saved application-page HTML file:
+
+```bash
+python page_inspector.py outputs/example-ltd-support-engineer --html examples/sample_application_page.html --write
 ```
 
 For reusable application form answers, first create the local ignored answers file:
@@ -595,6 +613,7 @@ batch_pipeline.py
 batch_apply_prep_pipeline.py
 status_dashboard.py
 browser_dry_run.py
+page_inspector.py
 readiness_checker.py
 application_packet.py
 submission_planner.py
@@ -621,6 +640,7 @@ README.md
 requirements.txt
 .gitignore
 examples/sample_job.txt
+examples/sample_application_page.html
 profiles/master_profile.md
 profiles/application_answers.example.md
 profiles/support_cv.md
@@ -669,7 +689,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, job intake, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, safe apply-prep orchestration, batch apply-prep orchestration, status dashboard summaries, readiness checking, application packet generation, submission planning, controlled apply session setup, safe form-fill planning, apply readiness gating, browser dry-run action planning, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, job intake, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, safe apply-prep orchestration, batch apply-prep orchestration, status dashboard summaries, readiness checking, application packet generation, submission planning, controlled apply session setup, safe form-fill planning, apply readiness gating, browser dry-run action planning, page inspection, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 AI draft/revision/reviewer tests use mocks and do not call the OpenAI API.
 The full package command is also covered by the automated tests.
 
@@ -684,9 +704,9 @@ The full package command is also covered by the automated tests.
 - DOCX/PDF exports are simple offline documents for the resume and cover letter, not custom-designed templates.
 - AI brief generation is offline. Optional AI draft generation, automatic revision, and recruiter review only run when requested.
 - Manifest generation prepares automation handoff data but does not submit applications.
-- Pipeline, batch pipeline, apply-prep pipeline, batch apply-prep pipeline, status dashboard, readiness checker, application packet builder, submission planner, apply assistant, form-fill planner, apply readiness gate, browser dry run, and Automation Unit currently validate packages and write reports only; they do not apply to jobs.
+- Pipeline, batch pipeline, apply-prep pipeline, batch apply-prep pipeline, status dashboard, readiness checker, application packet builder, submission planner, apply assistant, form-fill planner, apply readiness gate, browser dry run, page inspector, and Automation Unit currently validate packages and write reports only; they do not apply to jobs.
 - Apply assistant can open the job URL in a browser, but it does not fill forms or submit applications.
-- Form-fill planner and browser dry run prepare field mappings and future actions, but they do not interact with web pages.
+- Form-fill planner, browser dry run, and page inspector prepare field mappings and future actions, but they do not fill web pages.
 - Recruiter Review Agent is offline/rule-based by default; optional AI mode can add a second review pass.
 - Job tracker is local-only and uses SQLite.
 

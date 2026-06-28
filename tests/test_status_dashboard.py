@@ -32,6 +32,11 @@ def write_output_dir(path: Path, role: str = "support", apply_status: str = "Rea
         "# Browser Automation Dry Run\n\nStatus: Ready\n",
         encoding="utf-8",
     )
+    (path / "page_inspection.json").write_text("{}", encoding="utf-8")
+    (path / "page_inspection.md").write_text(
+        "# Page Inspection Report\n\nStatus: Ready for manual review\n",
+        encoding="utf-8",
+    )
     (path / "apply_readiness_report.md").write_text(
         f"# Apply Readiness Report\n\nStatus: {apply_status}\n",
         encoding="utf-8",
@@ -67,8 +72,13 @@ class StatusDashboardTests(unittest.TestCase):
             self.assertEqual(summary.detected_role, "support")
             self.assertEqual(summary.statuses["apply_readiness"], "Ready")
             self.assertEqual(summary.statuses["browser_dry_run"], "Ready")
+            self.assertEqual(
+                summary.statuses["page_inspection"],
+                "Ready for manual review",
+            )
             self.assertTrue(summary.key_files["resume"])
             self.assertTrue(summary.key_files["browser_dry_run"])
+            self.assertTrue(summary.key_files["page_inspection"])
             self.assertEqual(summary.overall_status, "Ready")
 
     def test_summarize_output_dir_marks_not_ready_as_blocked(self) -> None:
@@ -79,6 +89,19 @@ class StatusDashboardTests(unittest.TestCase):
             summary = summarize_output_dir(output_dir)
 
             self.assertEqual(summary.overall_status, "Blocked")
+
+    def test_summarize_output_dir_marks_page_review_as_attention_needed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "support"
+            write_output_dir(output_dir)
+            (output_dir / "page_inspection.md").write_text(
+                "# Page Inspection Report\n\nStatus: Needs review\n",
+                encoding="utf-8",
+            )
+
+            summary = summarize_output_dir(output_dir)
+
+            self.assertEqual(summary.overall_status, "Attention needed")
 
     def test_discover_output_dirs_finds_batch_children(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

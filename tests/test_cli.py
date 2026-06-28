@@ -600,6 +600,65 @@ class CliTests(unittest.TestCase):
             dry_run = json.loads(json_path.read_text(encoding="utf-8"))
             self.assertFalse(dry_run["submission_allowed"])
 
+    def test_page_inspector_cli_writes_json_and_markdown_reports(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+            output_dir.mkdir()
+            dry_run_path = output_dir / "browser_dry_run.json"
+            html_path = Path(temp_dir) / "application_page.html"
+            dry_run_path.write_text(
+                json.dumps(
+                    {
+                        "status": "ready",
+                        "submission_allowed": False,
+                        "stop_before_submit": True,
+                        "actions": [
+                            {
+                                "step": 1,
+                                "action": "fill_contact_field",
+                                "target": "email",
+                                "status": "ready",
+                                "value": "candidate@example.com",
+                            },
+                            {
+                                "step": 2,
+                                "action": "stop_before_submit",
+                                "target": "final_submit_button",
+                                "status": "stop",
+                                "value": "",
+                            },
+                        ],
+                        "guardrails": ["Do not submit applications automatically."],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            html_path.write_text(
+                "<form><label>Email <input type='email' name='email'></label>"
+                "<button type='submit'>Submit application</button></form>",
+                encoding="utf-8",
+            )
+
+            result = run_command(
+                [
+                    "page_inspector.py",
+                    str(output_dir),
+                    "--html",
+                    str(html_path),
+                    "--write",
+                ]
+            )
+            json_path = output_dir / "page_inspection.json"
+            markdown_path = output_dir / "page_inspection.md"
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Page Inspection Report", result.stdout)
+            self.assertTrue(json_path.exists())
+            self.assertTrue(markdown_path.exists())
+            inspection = json.loads(json_path.read_text(encoding="utf-8"))
+            self.assertFalse(inspection["submission_allowed"])
+            self.assertTrue(inspection["stop_button_detected"])
+
     def test_apply_prep_pipeline_cli_runs_safe_apply_prep_flow(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)

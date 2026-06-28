@@ -12,6 +12,7 @@ STATUS_FILES = {
     "readiness": "ready_to_apply_report.md",
     "apply_readiness": "apply_readiness_report.md",
     "browser_dry_run": "browser_dry_run.md",
+    "page_inspection": "page_inspection.md",
     "apply_prep": "apply_prep_report.md",
     "batch": "batch_report.md",
     "batch_apply_prep": "batch_apply_prep_report.md",
@@ -30,7 +31,12 @@ class OutputSummary:
     def overall_status(self) -> str:
         if any(status == "Not ready" for status in self.statuses.values()):
             return "Blocked"
-        attention_statuses = {"Stopped", "FAILED", "Completed with failures"}
+        attention_statuses = {
+            "Stopped",
+            "FAILED",
+            "Completed with failures",
+            "Needs review",
+        }
         if any(status in attention_statuses for status in self.statuses.values()):
             return "Attention needed"
         if any(status == "Ready with warnings" for status in self.statuses.values()):
@@ -90,6 +96,7 @@ def summarize_output_dir(output_dir: Path) -> OutputSummary:
         "application_packet": (output_dir / "application_packet.json").exists(),
         "form_fill_plan": (output_dir / "form_fill_plan.json").exists(),
         "browser_dry_run": (output_dir / "browser_dry_run.json").exists(),
+        "page_inspection": (output_dir / "page_inspection.json").exists(),
         "apply_session": (output_dir / "apply_session.md").exists(),
     }
     return OutputSummary(
