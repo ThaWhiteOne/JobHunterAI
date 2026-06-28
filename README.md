@@ -45,6 +45,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Imports a public job posting URL into the local job inbox
 - Imports multiple public job posting URLs from a local URL list
 - Scores saved jobs before generating applications
+- Runs the package pipeline only for saved jobs above a selected match score
 - Works offline by default without OpenAI API calls or external services
 
 ## Supported Roles
@@ -138,6 +139,12 @@ Only show jobs at or above a selected score:
 
 ```bash
 python job_matcher.py --jobs-dir jobs --min-score 70
+```
+
+Generate application packages only for saved jobs above a selected match score:
+
+```bash
+python matched_batch_pipeline.py --jobs-dir jobs --min-score 70 --output-root outputs/matched-batch
 ```
 
 Run the offline package pipeline with one command:
@@ -427,6 +434,8 @@ The AI draft and revision prompts explicitly tell the model to avoid generic fil
 
 `job_matcher.py` reads saved jobs from `jobs/job_index.json`, scores them with explainable offline signals, and can write `jobs/job_match_report.md`. The score uses detected role strength, matched keywords, positive junior/remote/profile-adjacent signals, and risk signals such as senior/lead requirements. It helps decide which saved jobs deserve a generated application package, but it does not apply to jobs.
 
+`matched_batch_pipeline.py` reads saved jobs, uses `job_matcher.py` to filter by score, then runs the existing safe package pipeline only for matching jobs. It writes `matched_batch_report.md` in the selected output root. It does not submit applications.
+
 `pipeline.py` runs profile validation, full package generation, the Automation Unit check, recruiter review, readiness check, application packet builder, and submission planner in order. It writes `pipeline_report.md` in the selected output folder. It does not submit applications.
 
 `readiness_checker.py` reads a generated output folder or manifest and writes `ready_to_apply_report.md`. It checks required package files, manifest consistency, offline recruiter review score, warnings, optional AI review files, and tracker linkage. It does not submit applications.
@@ -525,6 +534,13 @@ For multiple saved job descriptions:
 
 ```bash
 python job_intake.py add --company "Example Ltd" --position "Support Engineer" --text "Paste the job description here"
+python job_matcher.py --jobs-dir jobs --write-report
+python matched_batch_pipeline.py --jobs-dir jobs --min-score 70 --output-root outputs/matched-batch --ai
+```
+
+To generate packages for every saved job regardless of match score:
+
+```bash
 python batch_pipeline.py --jobs-dir jobs --output-root outputs/batch --ai
 ```
 
@@ -556,6 +572,7 @@ Review these files before applying:
 - `page_action_gate_report.md` when `page_action_gate.py --write-report` is used
 - `apply_prep_report.md` when `apply_prep_pipeline.py` is used
 - `pipeline_report.md` when `pipeline.py` is used
+- `matched_batch_report.md` when `matched_batch_pipeline.py` is used
 - `batch_report.md` when `batch_pipeline.py` is used
 - `batch_apply_prep_report.md` when `batch_apply_prep_pipeline.py` is used
 - `status_dashboard.md` when `status_dashboard.py --write` is used
@@ -725,6 +742,7 @@ job_intake.py
 job_url_importer.py
 batch_job_url_importer.py
 job_matcher.py
+matched_batch_pipeline.py
 pipeline.py
 batch_pipeline.py
 batch_apply_prep_pipeline.py
@@ -809,7 +827,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, desktop UI command wiring, desktop output-monitor snapshots, job intake, public job URL import parsing, batch URL import reporting, saved-job match scoring, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, safe apply-prep orchestration, batch apply-prep orchestration, status dashboard summaries, readiness checking, application packet generation, submission planning, controlled apply session setup, safe form-fill planning, apply readiness gating, browser dry-run action planning, browser review sessions, page inspection, page action planning and gating, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, desktop UI command wiring, desktop output-monitor snapshots, job intake, public job URL import parsing, batch URL import reporting, saved-job match scoring, matched batch package generation orchestration, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, safe apply-prep orchestration, batch apply-prep orchestration, status dashboard summaries, readiness checking, application packet generation, submission planning, controlled apply session setup, safe form-fill planning, apply readiness gating, browser dry-run action planning, browser review sessions, page inspection, page action planning and gating, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 AI draft/revision/reviewer tests use mocks and do not call the OpenAI API.
 The full package command is also covered by the automated tests.
 
@@ -820,6 +838,7 @@ The full package command is also covered by the automated tests.
 - Job intake supports manual saves and direct public URL import; broad automated job-board search is still future work.
 - URL import supports public HTML job pages, but sites that require login, block scripted access, or render all content in JavaScript may need the future browser automation phase.
 - Job matching is an explainable offline ranking signal, not a guarantee that a role is suitable or worth applying to.
+- Matched batch generation still creates drafts and review packages only; it does not submit applications.
 - Profile validation warns about missing dates, but the user still needs to add truthful dates to profile files.
 - The profile improvement guide suggests what to add, but it does not edit profile facts automatically.
 - Reusable application answers are optional and must be filled truthfully in local `profiles/application_answers.md`.
