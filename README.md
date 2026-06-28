@@ -20,6 +20,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Creates a final ready-to-apply report for generated packages
 - Creates a structured application packet for future automation handoff
 - Creates a non-submitting submission plan for the final apply step
+- Opens a controlled apply session without filling forms or submitting
 - Optionally exports generated documents to simple HTML, DOCX, and PDF files
 - Optionally creates review notes with matched keywords and a pre-apply checklist
 - Optionally prepares an offline AI brief for future tailoring
@@ -205,6 +206,18 @@ Build a non-submitting submission plan from the handoff packet:
 python submission_planner.py outputs/example-ltd-support-engineer --write
 ```
 
+Prepare a controlled browser apply session:
+
+```bash
+python apply_assistant.py outputs/example-ltd-support-engineer --write
+```
+
+Open the job URL from the packet in your default browser:
+
+```bash
+python apply_assistant.py outputs/example-ltd-support-engineer --write --open-browser
+```
+
 Review generated drafts like a recruiter:
 
 ```bash
@@ -277,6 +290,8 @@ The AI draft and revision prompts explicitly tell the model to avoid generic fil
 
 `submission_planner.py` reads `application_packet.json` and writes `submission_plan.md`, a human-readable apply sequence with job metadata, file paths, readiness status, warnings, and guardrails. It does not submit applications.
 
+`apply_assistant.py` reads `application_packet.json`, checks that the package is ready, optionally opens the job URL in the default browser, and writes `apply_session.md`. It does not fill forms, click apply, or submit applications.
+
 `batch_pipeline.py` runs `pipeline.py` for every `.txt` job description in a folder. It creates one output folder per job and writes `batch_report.md` in the batch output root. It continues after failed jobs by default, or stops early with `--stop-on-error`.
 
 The local `jobs/` folder is ignored by Git so real job descriptions are not committed.
@@ -348,6 +363,7 @@ Review these files before applying:
 - `ready_to_apply_report.md`
 - `application_packet.json`
 - `submission_plan.md`
+- `apply_session.md` when `apply_assistant.py --write` is used
 - `pipeline_report.md` when `pipeline.py` is used
 - `batch_report.md` when `batch_pipeline.py` is used
 
@@ -379,6 +395,12 @@ Then build the final submission plan:
 
 ```bash
 python submission_planner.py outputs/example-ltd-support-engineer --write
+```
+
+Then prepare the controlled apply session:
+
+```bash
+python apply_assistant.py outputs/example-ltd-support-engineer --write --open-browser
 ```
 
 Optional AI recruiter check:
@@ -461,6 +483,7 @@ batch_pipeline.py
 readiness_checker.py
 application_packet.py
 submission_planner.py
+apply_assistant.py
 ai_draft_generator.py
 ai_draft_reviser.py
 ai_reviewer.py
@@ -527,7 +550,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, job intake, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, readiness checking, application packet generation, submission planning, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, job intake, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, readiness checking, application packet generation, submission planning, controlled apply session setup, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 AI draft/revision/reviewer tests use mocks and do not call the OpenAI API.
 The full package command is also covered by the automated tests.
 
@@ -541,7 +564,8 @@ The full package command is also covered by the automated tests.
 - DOCX/PDF exports are simple offline documents for the resume and cover letter, not custom-designed templates.
 - AI brief generation is offline. Optional AI draft generation, automatic revision, and recruiter review only run when requested.
 - Manifest generation prepares automation handoff data but does not submit applications.
-- Pipeline, readiness checker, application packet builder, submission planner, and Automation Unit currently validate packages and write reports only; they do not apply to jobs.
+- Pipeline, readiness checker, application packet builder, submission planner, apply assistant, and Automation Unit currently validate packages and write reports only; they do not apply to jobs.
+- Apply assistant can open the job URL in a browser, but it does not fill forms or submit applications.
 - Recruiter Review Agent is offline/rule-based by default; optional AI mode can add a second review pass.
 - Job tracker is local-only and uses SQLite.
 

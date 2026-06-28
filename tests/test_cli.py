@@ -445,6 +445,34 @@ class CliTests(unittest.TestCase):
                 plan_path.read_text(encoding="utf-8"),
             )
 
+    def test_apply_assistant_cli_writes_apply_session(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "generated"
+
+            generate_result = run_command(
+                [
+                    "pipeline.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                ]
+            )
+            apply_result = run_command(
+                [
+                    "apply_assistant.py",
+                    str(output_dir),
+                    "--write",
+                ]
+            )
+            apply_session_path = output_dir / "apply_session.md"
+
+            self.assertEqual(generate_result.returncode, 0, generate_result.stderr)
+            self.assertEqual(apply_result.returncode, 0, apply_result.stderr)
+            self.assertIn("Apply Session", apply_result.stdout)
+            self.assertIn("does not fill forms", apply_result.stdout)
+            self.assertTrue(apply_session_path.exists())
+
     def test_tracker_cli_add_list_and_stats(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "jobs.db"
