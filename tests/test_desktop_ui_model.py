@@ -1,3 +1,5 @@
+import os
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -5,9 +7,12 @@ from desktop_ui_model import (
     DesktopSettings,
     actions_by_category,
     apply_prep_command,
+    build_output_snapshot,
     command_text,
     desktop_actions,
+    latest_existing_artifact,
     pipeline_command,
+    read_preview_text,
 )
 
 
@@ -63,6 +68,43 @@ class DesktopUiModelTests(unittest.TestCase):
             command_text(["python", "main.py", "--debug"]),
             "python main.py --debug",
         )
+
+    def test_build_output_snapshot_detects_generated_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            (output_dir / "resume.md").write_text("# Resume", encoding="utf-8")
+            (output_dir / "cover_letter.md").write_text("Cover", encoding="utf-8")
+
+            snapshot = build_output_snapshot(output_dir)
+
+            self.assertEqual(snapshot.generated_count, 2)
+            self.assertGreater(snapshot.total_count, snapshot.generated_count)
+            found = {artifact.filename for artifact in snapshot.artifacts if artifact.exists}
+            self.assertIn("resume.md", found)
+            self.assertIn("cover_letter.md", found)
+
+    def test_latest_existing_artifact_returns_newest_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+            resume = output_dir / "resume.md"
+            cover_letter = output_dir / "cover_letter.md"
+            resume.write_text("# Resume", encoding="utf-8")
+            cover_letter.write_text("Cover", encoding="utf-8")
+            os.utime(resume, (1000, 1000))
+            os.utime(cover_letter, (2000, 2000))
+
+            snapshot = build_output_snapshot(output_dir)
+
+            self.assertEqual(latest_existing_artifact(snapshot.artifacts), cover_letter)
+
+    def test_read_preview_text_handles_missing_and_truncation(self) -> None:
+        self.assertIn("No generated files yet", read_preview_text(None))
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            preview_path = Path(temp_dir) / "resume.md"
+            preview_path.write_text("abcdef", encoding="utf-8")
+
+            self.assertEqual(read_preview_text(preview_path, max_chars=3), "abc\n\n[Preview truncated]")
 
 
 if __name__ == "__main__":

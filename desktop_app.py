@@ -11,8 +11,10 @@ from desktop_ui_model import (
     DesktopAction,
     DesktopSettings,
     actions_by_category,
+    build_output_snapshot,
     command_text,
     desktop_actions,
+    read_preview_text,
 )
 from file_utils import read_text_file
 
@@ -26,6 +28,7 @@ MUTED = "#667085"
 ACCENT = "#2563eb"
 SUCCESS = "#047857"
 WARNING = "#b45309"
+MISSING = "#98a2b3"
 
 
 class JobHunterDesktopApp(tk.Tk):
@@ -45,11 +48,16 @@ class JobHunterDesktopApp(tk.Tk):
         self.active_view = tk.StringVar(value="Dashboard")
         self.command_running = False
         self.log_queue: queue.Queue[str] = queue.Queue()
+        self.visual_status_labels: dict[str, tk.Label] = {}
+        self.visual_summary_label: tk.Label | None = None
+        self.visual_latest_label: tk.Label | None = None
+        self.visual_preview: tk.Text | None = None
 
         self._configure_styles()
         self._build_shell()
         self._show_view("Dashboard")
         self.after(120, self._drain_log_queue)
+        self.after(1200, self._refresh_live_visual_loop)
 
     def _configure_styles(self) -> None:
         style = ttk.Style(self)
@@ -200,6 +208,7 @@ class JobHunterDesktopApp(tk.Tk):
             "Settings": self._build_settings_view,
         }
         builders[view]()
+        self._refresh_live_visual()
 
     def _panel(self, parent: tk.Widget, title: str, description: str = "") -> ttk.Frame:
         panel = ttk.Frame(parent, style="Panel.TFrame")
@@ -239,6 +248,7 @@ class JobHunterDesktopApp(tk.Tk):
         self._path_row(status, "Job description", self.job_path_var, self._choose_job_file)
         self._path_row(status, "Output folder", self.output_dir_var, self._choose_output_dir)
         self._path_row(status, "Answers file", self.answers_path_var, self._choose_answers_file)
+        self._build_live_visual_panel(self.main)
 
     def _build_pipeline_view(self) -> None:
         panel = self._panel(
@@ -291,6 +301,7 @@ class JobHunterDesktopApp(tk.Tk):
         for action in actions_by_category(self._settings()).get("Dashboard", []):
             self._action_row(panel, action)
         self._info_line(panel, "Final submit remains disabled until a future explicit approval stage.")
+        self._build_live_visual_panel(self.main)
 
     def _build_settings_view(self) -> None:
         panel = self._panel(
@@ -350,6 +361,76 @@ class JobHunterDesktopApp(tk.Tk):
             anchor="w", padx=16, pady=(4, 14)
         )
 
+    def _build_live_visual_panel(self, parent: tk.Widget) -> None:
+        panel = self._panel(
+            parent,
+            "Live Output Monitor",
+            "Watch generated package files, reports, and automation prep artifacts update.",
+        )
+        toolbar = ttk.Frame(panel, style="Panel.TFrame")
+        toolbar.pack(fill=tk.X, padx=16, pady=(2, 8))
+        self.visual_summary_label = tk.Label(
+            toolbar,
+            text="Checking output folder...",
+            bg=PANEL_BG,
+            fg=TEXT,
+            font=("Segoe UI Semibold", 10),
+            anchor="w",
+        )
+        self.visual_summary_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Button(toolbar, text="Refresh", command=self._refresh_live_visual).pack(side=tk.RIGHT)
+
+        body = ttk.Frame(panel, style="Panel.TFrame")
+        body.pack(fill=tk.BOTH, expand=True, padx=16, pady=(0, 16))
+
+        status_frame = ttk.Frame(body, style="Panel.TFrame")
+        status_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 14))
+        self.visual_status_labels = {}
+        for row, artifact in enumerate(build_output_snapshot(Path(self.output_dir_var.get())).artifacts):
+            name = tk.Label(
+                status_frame,
+                text=artifact.label,
+                bg=PANEL_BG,
+                fg=TEXT,
+                font=("Segoe UI", 9),
+                anchor="w",
+                width=20,
+            )
+            name.grid(row=row, column=0, sticky="w", pady=2)
+            status = tk.Label(
+                status_frame,
+                text="Missing",
+                bg=PANEL_BG,
+                fg=MISSING,
+                font=("Segoe UI Semibold", 9),
+                anchor="w",
+                width=10,
+            )
+            status.grid(row=row, column=1, sticky="w", padx=(8, 0), pady=2)
+            self.visual_status_labels[artifact.key] = status
+
+        preview_frame = ttk.Frame(body, style="Panel.TFrame")
+        preview_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.visual_latest_label = tk.Label(
+            preview_frame,
+            text="Latest generated file",
+            bg=PANEL_BG,
+            fg=MUTED,
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        self.visual_latest_label.pack(fill=tk.X, pady=(0, 5))
+        self.visual_preview = tk.Text(
+            preview_frame,
+            height=10,
+            bg="#f8fafc",
+            fg=TEXT,
+            relief=tk.FLAT,
+            font=("Consolas", 9),
+            wrap=tk.WORD,
+        )
+        self.visual_preview.pack(fill=tk.BOTH, expand=True)
+
     def _choose_job_file(self) -> None:
         path = filedialog.askopenfilename(
             title="Choose job description",
@@ -357,11 +438,13 @@ class JobHunterDesktopApp(tk.Tk):
         )
         if path:
             self.job_path_var.set(path)
+            self._refresh_live_visual()
 
     def _choose_output_dir(self) -> None:
         path = filedialog.askdirectory(title="Choose output folder")
         if path:
             self.output_dir_var.set(path)
+            self._refresh_live_visual()
 
     def _choose_answers_file(self) -> None:
         path = filedialog.askopenfilename(
@@ -370,6 +453,7 @@ class JobHunterDesktopApp(tk.Tk):
         )
         if path:
             self.answers_path_var.set(path)
+            self._refresh_live_visual()
 
     def _run_action(self, action: DesktopAction) -> None:
         if self.command_running:
@@ -380,6 +464,7 @@ class JobHunterDesktopApp(tk.Tk):
         self._log("")
         self._log(f"Starting: {action.label}")
         self._log(f"$ {command_text(command)}")
+        self._refresh_live_visual()
         thread = threading.Thread(target=self._run_command_thread, args=(command,), daemon=True)
         thread.start()
 
@@ -412,9 +497,46 @@ class JobHunterDesktopApp(tk.Tk):
                 break
             if message == "__COMMAND_DONE__":
                 self.command_running = False
+                self._refresh_live_visual()
             else:
                 self._log(message)
         self.after(120, self._drain_log_queue)
+
+    def _refresh_live_visual_loop(self) -> None:
+        self._refresh_live_visual()
+        self.after(1500, self._refresh_live_visual_loop)
+
+    def _refresh_live_visual(self) -> None:
+        if not self.visual_summary_label or not self.visual_summary_label.winfo_exists():
+            return
+        snapshot = build_output_snapshot(Path(self.output_dir_var.get()))
+        running_text = "Running" if self.command_running else "Idle"
+        self.visual_summary_label.configure(
+            text=(
+                f"{running_text}: {snapshot.generated_count}/"
+                f"{snapshot.total_count} tracked artifacts generated"
+            )
+        )
+        for artifact in snapshot.artifacts:
+            label = self.visual_status_labels.get(artifact.key)
+            if not label or not label.winfo_exists():
+                continue
+            label.configure(
+                text="Found" if artifact.exists else "Missing",
+                fg=SUCCESS if artifact.exists else MISSING,
+            )
+        latest_text = (
+            f"Latest generated file: {snapshot.latest_path}"
+            if snapshot.latest_path
+            else f"Watching output folder: {snapshot.output_dir}"
+        )
+        if self.visual_latest_label and self.visual_latest_label.winfo_exists():
+            self.visual_latest_label.configure(text=latest_text)
+        if self.visual_preview and self.visual_preview.winfo_exists():
+            self.visual_preview.configure(state=tk.NORMAL)
+            self.visual_preview.delete("1.0", tk.END)
+            self.visual_preview.insert(tk.END, read_preview_text(snapshot.latest_path))
+            self.visual_preview.configure(state=tk.DISABLED)
 
     def _log(self, message: str) -> None:
         self.console.configure(state=tk.NORMAL)

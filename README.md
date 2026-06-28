@@ -29,7 +29,8 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Inspects saved application-page HTML against the browser dry-run plan
 - Creates a non-executing selector action plan from inspected page fields
 - Gates the selector action plan before any future browser automation runner
-- Provides a desktop-only UI with sidebar navigation, workflow buttons, and a live pipeline console
+- Provides a desktop-only UI with sidebar navigation, workflow buttons, a live output monitor, and a live pipeline console
+- Includes a Windows double-click launcher for the desktop UI
 - Runs the full safe apply-prep workflow with one command
 - Runs the safe apply-prep workflow for multiple saved jobs in a batch
 - Summarizes generated single-job and batch outputs in a status dashboard
@@ -41,6 +42,7 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Includes an offline Recruiter Review Agent for draft quality checks
 - Optionally runs an AI recruiter review when explicitly requested
 - Tracks job applications with a local SQLite database
+- Imports a public job posting URL into the local job inbox
 - Works offline by default without OpenAI API calls or external services
 
 ## Supported Roles
@@ -59,6 +61,12 @@ Launch the desktop UI:
 
 ```bash
 python desktop_app.py
+```
+
+On Windows, you can also double-click:
+
+```text
+JobHunterAI.bat
 ```
 
 Use a custom job description file:
@@ -96,6 +104,18 @@ List saved job descriptions:
 
 ```bash
 python job_intake.py list
+```
+
+Import a public job posting URL into the local job inbox:
+
+```bash
+python job_url_importer.py "https://example.com/job-posting"
+```
+
+If the page does not expose clear job metadata, provide overrides:
+
+```bash
+python job_url_importer.py "https://example.com/job-posting" --company "Example Ltd" --position "Junior Python Developer"
 ```
 
 Run the offline package pipeline with one command:
@@ -379,6 +399,8 @@ The AI draft and revision prompts explicitly tell the model to avoid generic fil
 
 `job_intake.py` saves copied job descriptions into the ignored `jobs/` folder and updates `jobs/job_index.json`. It does not scrape job boards or submit applications.
 
+`job_url_importer.py` fetches a provided public job posting URL, extracts job title, company, and description from JobPosting JSON-LD or visible HTML fallback text, then saves it into the ignored `jobs/` folder through the same local intake flow. It does not search job boards, bypass logins, fill forms, or submit applications.
+
 `pipeline.py` runs profile validation, full package generation, the Automation Unit check, recruiter review, readiness check, application packet builder, and submission planner in order. It writes `pipeline_report.md` in the selected output folder. It does not submit applications.
 
 `readiness_checker.py` reads a generated output folder or manifest and writes `ready_to_apply_report.md`. It checks required package files, manifest consistency, offline recruiter review score, warnings, optional AI review files, and tracker linkage. It does not submit applications.
@@ -407,7 +429,7 @@ The AI draft and revision prompts explicitly tell the model to avoid generic fil
 
 `page_action_gate.py` reads `page_action_plan.json` and writes `page_action_gate_report.md`. It blocks future automation if selectors are missing, review steps remain, stop rules are missing, or any execution/submission flags are unsafe. It does not execute selectors, fill fields, upload files, click apply, or submit applications.
 
-`desktop_app.py` launches a desktop-only Tkinter UI with left-side navigation, workflow buttons, settings/profile views, and a console window that streams pipeline output. It wraps existing safe commands and does not bypass any gate or submit applications.
+`desktop_app.py` launches a desktop-only Tkinter UI with left-side navigation, workflow buttons, settings/profile views, a live output monitor, and a console window that streams pipeline output. The live monitor watches the selected output folder, shows which package/report files exist, and previews the newest generated artifact while workflows run. It wraps existing safe commands and does not bypass any gate or submit applications.
 
 `apply_prep_pipeline.py` runs the safe chain in order: package pipeline, form-fill plan, apply readiness gate, browser automation dry run, then controlled apply session only when the gate passes. It writes `apply_prep_report.md`. It does not fill forms or submit applications.
 
@@ -667,12 +689,14 @@ python tracker.py list
 
 ```text
 main.py
+JobHunterAI.bat
 desktop_app.py
 desktop_ui_model.py
 tracker.py
 automation_unit.py
 profile_validator.py
 job_intake.py
+job_url_importer.py
 pipeline.py
 batch_pipeline.py
 batch_apply_prep_pipeline.py
@@ -757,7 +781,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, desktop UI command wiring, job intake, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, safe apply-prep orchestration, batch apply-prep orchestration, status dashboard summaries, readiness checking, application packet generation, submission planning, controlled apply session setup, safe form-fill planning, apply readiness gating, browser dry-run action planning, browser review sessions, page inspection, page action planning and gating, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, desktop UI command wiring, desktop output-monitor snapshots, job intake, public job URL import parsing, profile validation and profile improvement guidance, single-job and batch pipeline orchestration, safe apply-prep orchestration, batch apply-prep orchestration, status dashboard summaries, readiness checking, application packet generation, submission planning, controlled apply session setup, safe form-fill planning, apply readiness gating, browser dry-run action planning, browser review sessions, page inspection, page action planning and gating, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 AI draft/revision/reviewer tests use mocks and do not call the OpenAI API.
 The full package command is also covered by the automated tests.
 
@@ -765,7 +789,8 @@ The full package command is also covered by the automated tests.
 
 - Uses simple keyword scoring for role detection.
 - `main.py`, `pipeline.py`, and `apply_prep_pipeline.py` read one job description per run; the batch commands handle a folder of saved `.txt` job descriptions.
-- Job intake currently saves manually copied job descriptions; automated search/import is still future work.
+- Job intake supports manual saves and direct public URL import; broad automated job-board search is still future work.
+- URL import supports public HTML job pages, but sites that require login, block scripted access, or render all content in JavaScript may need the future browser automation phase.
 - Profile validation warns about missing dates, but the user still needs to add truthful dates to profile files.
 - The profile improvement guide suggests what to add, but it does not edit profile facts automatically.
 - Reusable application answers are optional and must be filled truthfully in local `profiles/application_answers.md`.
@@ -777,11 +802,11 @@ The full package command is also covered by the automated tests.
 - Form-fill planner, browser dry run, browser review session, page inspector, and page action planner/gate prepare field mappings and future actions, but they do not fill web pages.
 - Recruiter Review Agent is offline/rule-based by default; optional AI mode can add a second review pass.
 - Job tracker is local-only and uses SQLite.
-- Desktop UI wraps the current safe commands; it is not packaged as an installer yet.
+- Desktop UI wraps the current safe commands and shows generated output live. It has a Windows launcher, but it is not packaged as an installer yet.
 
 ## Roadmap
 
-- Package the desktop UI as a Windows app
+- Package the desktop UI as a Windows installer
 - Improve DOCX/PDF styling templates
 - Refine optional AI review prompts with real application feedback
 - Add controlled browser/job-site automation with explicit user approval gates
