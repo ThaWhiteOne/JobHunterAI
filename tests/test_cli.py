@@ -391,6 +391,43 @@ class CliTests(unittest.TestCase):
             self.assertIn("Total jobs: 1", stats_result.stdout)
             self.assertIn("- applied: 1", stats_result.stdout)
 
+    def test_profile_validator_cli_writes_report(self) -> None:
+        result = run_command(["profile_validator.py", "--write-report"])
+        report_path = BASE_DIR / "outputs" / "profile_validation_report.md"
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Profile Validation Report", result.stdout)
+        self.assertIn(str(report_path), result.stdout)
+        self.assertTrue(report_path.exists())
+        self.assertIn(
+            "Profile Validation Report",
+            report_path.read_text(encoding="utf-8"),
+        )
+
+    def test_pipeline_cli_runs_offline_package_flow(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir) / "pipeline-output"
+
+            result = run_command(
+                [
+                    "pipeline.py",
+                    "--job",
+                    "examples/sample_job.txt",
+                    "--output-dir",
+                    str(output_dir),
+                ]
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Profile validation: OK", result.stdout)
+            self.assertIn("Application package generation: OK", result.stdout)
+            self.assertIn("Automation Unit check: OK", result.stdout)
+            self.assertIn("Recruiter review: OK", result.stdout)
+            self.assertTrue((output_dir / "application_manifest.json").exists())
+            self.assertTrue((output_dir / "automation_report.md").exists())
+            self.assertTrue((output_dir / "recruiter_review.md").exists())
+            self.assertTrue((output_dir / "pipeline_report.md").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

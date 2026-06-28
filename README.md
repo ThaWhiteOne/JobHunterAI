@@ -13,6 +13,8 @@ It is built as both a practical job-search assistant and a clean junior portfoli
 - Can generate a full offline application package with one command
 - Optionally uses AI to generate stronger tailored drafts from the selected profile
 - Optionally uses AI to automatically revise drafts before files are written
+- Validates profile and template source files before automation
+- Runs the safe generation/check/review workflow with one pipeline command
 - Optionally exports generated documents to simple HTML, DOCX, and PDF files
 - Optionally creates review notes with matched keywords and a pre-apply checklist
 - Optionally prepares an offline AI brief for future tailoring
@@ -46,6 +48,24 @@ Print role scores and profile selection details:
 
 ```bash
 python main.py --debug
+```
+
+Check whether profile/template source files are ready for automation:
+
+```bash
+python profile_validator.py --write-report
+```
+
+Run the offline package pipeline with one command:
+
+```bash
+python pipeline.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer
+```
+
+Run the AI draft pipeline with automatic revision:
+
+```bash
+python pipeline.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --ai
 ```
 
 Write generated files to a custom folder:
@@ -188,6 +208,10 @@ When `--ai-drafts` is used, JobHunterAI asks OpenAI to generate `resume.md`, `co
 
 When `--ai-auto-revise` is used, JobHunterAI sends the generated drafts through a second AI recruiter/editor pass before writing the final files. It also writes `ai_revision_notes.md` so you can see what the automated revision changed.
 
+`profile_validator.py` checks the master profile, role profiles, and resume template before automation. Missing files or required sections are errors. Placeholder-style text and missing dates are warnings so you can improve the source data once and reuse it safely.
+
+`pipeline.py` runs profile validation, full package generation, the Automation Unit check, and recruiter review in order. It writes `pipeline_report.md` in the selected output folder. It does not submit applications.
+
 When `--manifest` is used, JobHunterAI also writes `application_manifest.json` with detected role details, generated file paths, matched keywords, tracker ID if available, and automation guardrails.
 
 `automation_unit.py check` reads `application_manifest.json`, confirms expected files exist, prints the detected role, and repeats the guardrails. It does not submit applications or call external APIs.
@@ -226,7 +250,14 @@ python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-su
 For the most automated draft flow:
 
 ```bash
+python profile_validator.py --write-report
 python main.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --full-package --ai-drafts --ai-auto-revise
+```
+
+Or run the same safe package flow through the pipeline:
+
+```bash
+python pipeline.py --job examples/sample_job.txt --output-dir outputs/example-ltd-support-engineer --ai
 ```
 
 Review these files before applying:
@@ -237,6 +268,7 @@ Review these files before applying:
 - `application_review.md`
 - `ai_brief.md`
 - `ai_revision_notes.md` when `--ai-auto-revise` is used
+- `pipeline_report.md` when `pipeline.py` is used
 
 Then run the safe Automation Unit check:
 
@@ -323,6 +355,8 @@ python tracker.py list
 main.py
 tracker.py
 automation_unit.py
+profile_validator.py
+pipeline.py
 ai_draft_generator.py
 ai_draft_reviser.py
 ai_reviewer.py
@@ -389,7 +423,7 @@ Run the automated tests:
 python -m unittest
 ```
 
-The tests cover role detection, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
+The tests cover role detection, profile validation, pipeline orchestration, job analysis, AI brief generation, AI draft parsing/revision, manifest generation, Automation Unit checks/reports, recruiter-style draft review, profile fallback behavior, basic document generation, HTML/DOCX/PDF export, generator-to-tracker integration, job tracker database operations, saved job text, and basic CLI commands.
 AI draft/revision/reviewer tests use mocks and do not call the OpenAI API.
 The full package command is also covered by the automated tests.
 
@@ -397,10 +431,11 @@ The full package command is also covered by the automated tests.
 
 - Uses simple keyword scoring for role detection.
 - Reads one job description file per run.
+- Profile validation warns about missing dates, but the user still needs to add truthful dates to profile files.
 - DOCX/PDF exports are simple offline documents for the resume and cover letter, not custom-designed templates.
 - AI brief generation is offline. Optional AI draft generation, automatic revision, and recruiter review only run when requested.
 - Manifest generation prepares automation handoff data but does not submit applications.
-- Automation Unit currently validates packages and writes reports only; it does not apply to jobs.
+- Pipeline and Automation Unit currently validate packages and write reports only; they do not apply to jobs.
 - Recruiter Review Agent is offline/rule-based by default; optional AI mode can add a second review pass.
 - Job tracker is local-only and uses SQLite.
 
